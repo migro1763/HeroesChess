@@ -12,13 +12,6 @@ import game.ChessGame;
 //import interfaces.IPlayerHandler;
 //import net.XmlRpcPlayerHandler;
 
-/**
- * Main class of the application. This class starts the game logic and sets
- * the IPlayerHandler instances for the black and white player. If you want
- * to switch from playing "Swing user interface" against "Network player"
- * to "Network player" against "artificial intelligence player", this is the
- * class you need to change.
- */
 public class HeroesChess implements Vals {
 
 	private static final int PLAYER_OPTION_SWING = 0;
@@ -29,13 +22,11 @@ public class HeroesChess implements Vals {
 
 		// ask for player handlers to be used for this game
 		//
-//		String[] iPlayerHandlerOptions = new String[] {
-//			"Swing GUI", "AI Player"
-//		}; //, "Network Player"
-//		int whitePlayerOption = Speak.ask("What should be the white (starting) player?"
-//				, iPlayerHandlerOptions);
-//		int blackPlayerOption = Speak.ask("What should be the black player?"
-//				, iPlayerHandlerOptions);
+		String[] iPlayerHandlerOptions = new String[] {
+			"Swing GUI", "AI Player"
+		}; //, "Network Player"
+		int whitePlayerOption = Speak.ask("What should be the white player?", iPlayerHandlerOptions);
+		int blackPlayerOption = Speak.ask("What should be the black player?", iPlayerHandlerOptions);
 
 		// in case of network players, ask for details
 		//
@@ -51,32 +42,31 @@ public class HeroesChess implements Vals {
 //		}
 
 		// create the game logic
-//		ChessGame chessGame = new ChessGame();
+		HeroesChessGame hcg = new HeroesChessGame();
 
 		// assign white and black player
-//		IPlayerHandler playerWhite = getPlayerHandler(whitePlayerOption, chessGame, gameIdOnServer, gamePassword);
-//		IPlayerHandler playerBlack = null;
+		IPlayerHandler playerWhite = getPlayerHandler(whitePlayerOption, hcg, gameIdOnServer, gamePassword);
+		IPlayerHandler playerBlack = null;
 		
-//		Player playerWhite = getPlayerHandler(whitePlayerOption, chessGame, gameIdOnServer, gamePassword);
-//		Player playerBlack = null;
+		Player playerWhite = getPlayerHandler(whitePlayerOption, hcg, gameIdOnServer, gamePassword);
+		Player playerBlack = null;
 		
 		// if white and black are the same (e.g. both Swing or both Console)
 		// then do not create a new player instance, but reuse the already
 		// created ones. Otherwise we would create two Swing frames or
 		// mess up the console interface, etc.
-//		if (whitePlayerOption == blackPlayerOption) {
-//			playerBlack = playerWhite;
-//		} else {
-//			playerBlack = getPlayerHandler(blackPlayerOption, chessGame, gameIdOnServer, gamePassword);			
-//		}
+		if (whitePlayerOption == blackPlayerOption) {
+			playerBlack = playerWhite;
+		} else {
+			playerBlack = getPlayerHandler(blackPlayerOption, hcg, gameIdOnServer, gamePassword);			
+		}
 
 		// then we attach the clients/players to the game
-//		chessGame.setPlayer(Piece.COLOR_WHITE, playerWhite);
-//		chessGame.setPlayer(Piece.COLOR_BLACK, playerBlack);
+		hcg.setPlayer(0, playerWhite);
+		hcg.setPlayer(1, playerBlack);
 
 		// in the end we start the game
-//		new Thread(chessGame).start();
-		new HeroesChessGame();
+		new Thread(hcg).start();
 	}
 	
 	/**

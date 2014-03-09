@@ -9,7 +9,6 @@ public class Speak {
 	public static int ask(String question, String[] options) {
 		BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
 		while(true) {
-			System.out.println();
 			try {
 				System.out.println(question);
 				for (int i = 0; i < options.length; i++)

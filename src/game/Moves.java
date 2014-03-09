@@ -186,7 +186,8 @@ public class Moves {
 			andBits |= ((colour == 0) ? (binPos>>>8 | ((binPos & rankMask[6])>>>16) & binPos>>>16) :
 										(binPos<<8 | ((binPos & rankMask[1])<<16) & binPos<<16)) & 
 										empty;
-		}	
+		}
+		
 		return andBits;
 	}
 	
@@ -283,7 +284,29 @@ public class Moves {
 		                list += (colour == 0) ? "7472" : "0402"; // king and rook moves
         }
         return list;
-    }
+    }	
+
+	public void promotePawn(int pos, int colour) {	
+		BB pawnBB = gameBB.getBB((colour == 0) ? 'P' : 'p'); // pawn to promote
+		char knight = (colour == 0) ? 'N' : 'n'; // promotion choice 0
+		char queen = (colour == 0) ? 'Q' : 'q'; // promotion choice 1
+		gameBB.drawArray(pawnBB.getBits(), "pawns before");
+		String[] choices = {gameBB.getLongName(knight), gameBB.getLongName(queen)};
+		int promotionType = Speak.ask("What do you wish the pawn to be promoted to?", choices);
+		switch(promotionType) {
+			case 0: // if choosing knight
+				pawnBB.mulBits(~(1L<<pos)); // set pawn bit to 0 at pos
+				gameBB.drawArray(pawnBB.getBits(), "pawns after");
+				gameBB.drawArray(gameBB.getBB(knight).getBits(), "knights before");
+				gameBB.getBB(knight).addBits(1L<<pos); // set knight bit to 1 at pos
+				gameBB.drawArray(gameBB.getBB(knight).getBits(), "knights after");
+				break;
+			case 1: // if choosing queen
+				pawnBB.mulBits(~(1L<<pos)); // set pawn bit to 0 at pos
+				gameBB.getBB(queen).addBits(1L<<pos); // set queen bit to 1 at pos
+				break;
+		}
+	}
 	
 	public void updateBBStates() {
 		// setting up bitboard masks

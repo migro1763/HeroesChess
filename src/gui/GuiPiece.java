@@ -1,12 +1,14 @@
 package gui;
 
 //import java.awt.Image;
+import game.BB;
+
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import pieces.Piece;
 
-public class GuiPiece extends Piece {
+public class GuiPiece {
 	
 	// animation states
 	private int state = 0;
@@ -21,15 +23,13 @@ public class GuiPiece extends Piece {
 	private int y;
 	private int prevX = 0;
 	private int prevY = 0;
-	private Piece piece;
 	
 	private long previousTime;
 	private long speed = 150;
 	private volatile boolean running = false;
 
-	public GuiPiece(ArrayList<Animator> anim, Piece piece) {
+	public GuiPiece(ArrayList<Animator> anim) {
 		this.anim = anim;
-		this.piece = piece;
 		this.resetToUnderlyingPiecePosition();
 	}
 	
@@ -81,15 +81,6 @@ public class GuiPiece extends Piece {
 
 	public int getHeight() {
 		return anim.get(state).sprite.getHeight(null);
-	}
-
-	public int getColor() {
-		return this.piece.getColor();
-	}
-	
-	@Override
-	public String toString() {
-		return this.piece+" "+x+"/"+y;
 	}
 
 	/**

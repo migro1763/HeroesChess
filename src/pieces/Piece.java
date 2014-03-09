@@ -1,11 +1,8 @@
 package pieces;
 
-import interfaces.Vals;
-
-public abstract class Piece implements Vals {
+public abstract class Piece {
 		
 	protected boolean isCaptured = false;
-	protected boolean hasMoved = false;
 
 	public Piece() {
 		
@@ -41,14 +38,6 @@ public abstract class Piece implements Vals {
 
 	public boolean isCaptured() {
 		return this.isCaptured;
-	}
-
-	public boolean hasMoved() {
-		return hasMoved;
-	}
-
-	public void setHasMoved() {
-		this.hasMoved = true;
 	}
 	
 	public Piece clone() {

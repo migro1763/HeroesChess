@@ -7,11 +7,11 @@ public abstract class Player extends JPanel {
 	private static final long serialVersionUID = 4140234403329894661L;
 	private boolean isCheck;
 	
-	public Move getMove() {
+	public String getMove() {
 		return null;
 	}
 	
-    public void moveSuccessfullyExecuted(Move move) {}
+    public void moveSuccessfullyExecuted(String move) {}
 
 	public boolean isCheck() {
 		return isCheck;

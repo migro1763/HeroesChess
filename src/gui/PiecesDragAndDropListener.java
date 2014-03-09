@@ -9,12 +9,12 @@ import java.util.List;
 import javax.swing.JFrame;
 
 import game.ChessGame;
-import game.Piece;
+//import game.Piece;
 
 public class PiecesDragAndDropListener implements MouseListener, MouseMotionListener {
 
 	private List<GuiPiece> guiPieces;
-	private ChessGui chessGui;
+	private HeroesChessGui heroesChessGui;
 	
 	private int dragOffsetX;
 	private int dragOffsetY;
@@ -22,9 +22,9 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 	static Point mouseDownCompCoords;
 	private JFrame frame;
 
-	public PiecesDragAndDropListener(List<GuiPiece> guiPieces, ChessGui chessGui, JFrame f) {
+	public PiecesDragAndDropListener(List<GuiPiece> guiPieces, HeroesChessGui chessGui, JFrame f) {
 		this.guiPieces = guiPieces;
-		this.chessGui = chessGui;
+		this.heroesChessGui = chessGui;
 		frame = f;
 	}
 
@@ -41,7 +41,7 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 	public void mousePressed(MouseEvent evt) {
 		mouseDownCompCoords = evt.getPoint();
 		
-		if( !this.chessGui.isDraggingGamePiecesEnabled())
+		if( !this.heroesChessGui.isDraggingGamePiecesEnabled())
 			return;
 		
 //		int x = evt.getPoint().x;
@@ -66,13 +66,13 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 //					) {
 				
 				// only pick up pieces of same color as current player
-				if(guiPiece.getColor() == this.chessGui.getGameState()) {
+				if(guiPiece.getColor() == this.heroesChessGui.getGameState()) {
 					// calculate offset, because we do not want the drag piece
 					// to jump with it's upper left corner to the current mouse
 					// position
 					this.dragOffsetX = x - guiPiece.getX();
 					this.dragOffsetY = y - guiPiece.getY();
-					this.chessGui.setDragPiece(guiPiece);
+					this.heroesChessGui.setDragPiece(guiPiece);
 //					this.chessGui.repaint();
 					break;
 				}
@@ -80,19 +80,13 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		}
 		
 		// move drag piece to the top of the list
-		if(this.chessGui.getDragPiece() != null){
-			this.guiPieces.remove( this.chessGui.getDragPiece() );
-			this.guiPieces.add(this.chessGui.getDragPiece());
+		if(this.heroesChessGui.getDragPiece() != null){
+			this.guiPieces.remove( this.heroesChessGui.getDragPiece() );
+			this.guiPieces.add(this.heroesChessGui.getDragPiece());
 		}
 	}
 
-	/**
-	 * check whether the mouse is currently over this piece
-	 * @param piece the playing piece
-	 * @param x x coordinate of mouse
-	 * @param y y coordinate of mouse
-	 * @return true if mouse is over the piece
-	 */
+	// check whether the mouse is currently over this piece
 	private boolean mouseOverPiece(GuiPiece guiPiece, int x, int y) {
 
 		return guiPiece.getX() <= x 
@@ -105,15 +99,15 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 	public void mouseReleased(MouseEvent evt) {
 		mouseDownCompCoords = null;
 		
-		if( this.chessGui.getDragPiece() != null){
+		if( this.heroesChessGui.getDragPiece() != null){
 			int x = evt.getPoint().x - this.dragOffsetX;
 			int y = evt.getPoint().y - this.dragOffsetY;
 			
 			// set game piece to the new location if possible
 			//
-			chessGui.setNewPieceLocation(this.chessGui.getDragPiece(), x, y);
-			this.chessGui.repaint();
-			this.chessGui.setDragPiece(null);
+			heroesChessGui.setNewPieceLocation(this.heroesChessGui.getDragPiece(), x, y);
+			this.heroesChessGui.repaint();
+			this.heroesChessGui.setDragPiece(null);
 		}
 	}
 
@@ -121,16 +115,16 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 	public void mouseDragged(MouseEvent evt) {
         Point currCoords = evt.getLocationOnScreen();
         
-		if(this.chessGui.getDragPiece() != null) {
+		if(this.heroesChessGui.getDragPiece() != null) {
 			
 			int x = evt.getPoint().x - this.dragOffsetX;
 			int y = evt.getPoint().y - this.dragOffsetY;
 			
-			GuiPiece dragPiece = this.chessGui.getDragPiece();
+			GuiPiece dragPiece = this.heroesChessGui.getDragPiece();
 			dragPiece.setX(x);
 			dragPiece.setY(y);
 			
-			this.chessGui.repaint();
+			this.heroesChessGui.repaint();
 		} else {
 	        frame.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y);
 		}
