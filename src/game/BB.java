@@ -14,8 +14,16 @@ public class BB {
 		this.colour = 0;
 	}
 	
-	public void setBits(long bits) {
+	public void addBits(long bits) { // or
 		this.bits |= bits;
+	}
+	
+	public void mulBits(long bits) { // and
+		this.bits &= bits;
+	}
+	
+	public void xorBits(long bits) { // xor
+		this.bits ^= bits;
 	}
 	
 	public long getBits() {

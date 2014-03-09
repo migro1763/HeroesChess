@@ -32,9 +32,9 @@ public class HeroesChess implements Vals {
 //		String[] iPlayerHandlerOptions = new String[] {
 //			"Swing GUI", "AI Player"
 //		}; //, "Network Player"
-//		int whitePlayerOption = ask("What should be the white (starting) player?"
+//		int whitePlayerOption = Speak.ask("What should be the white (starting) player?"
 //				, iPlayerHandlerOptions);
-//		int blackPlayerOption = ask("What should be the black player?"
+//		int blackPlayerOption = Speak.ask("What should be the black player?"
 //				, iPlayerHandlerOptions);
 
 		// in case of network players, ask for details
@@ -42,12 +42,12 @@ public class HeroesChess implements Vals {
 //		String gameIdOnServer = null;
 //		String gamePassword = null;
 //		if(whitePlayerOption == PLAYER_OPTION_NETWORK) {
-//			gameIdOnServer = ask("Game ID on server:");
-//			gamePassword = ask("Password for game:");
+//			gameIdOnServer = Speak.ask("Game ID on server:");
+//			gamePassword = Speak.ask("Password for game:");
 //		}
 //		
 //		if(blackPlayerOption == PLAYER_OPTION_NETWORK) {
-//			gamePassword = ask("Password for new game:");
+//			gamePassword = Speak.ask("Password for new game:");
 //		}
 
 		// create the game logic
@@ -110,51 +110,4 @@ public class HeroesChess implements Vals {
 			default: throw new IllegalArgumentException("Invalid player option:" + playerHandlerOption);
 		}
 	}
-
-	public static int ask(String question, String[] options) {
-		BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-		while(true) {
-			System.out.println();
-			try {
-				System.out.println(question);
-				for (int i = 0; i < options.length; i++)
-					System.out.print(i + ":" +options[i]+" ");
-				System.out.print("\nYour choice: ");
-				String returnValue =  inputReader.readLine();
-				
-				// check validity
-				int choice = Integer.parseInt(returnValue);
-				if((choice >= 0 && choice < options.length) || choice == -2) {
-					return choice;
-				} else {
-					System.out.println("Your selection is out of range. Please try again.");
-				}
-			} catch (Exception e) {
-				System.out.println("Your choice has been invalid, please try again:" + e);
-			}
-		}
-	}
-
-	public static String ask(String question) {
-		System.out.println();
-		//read user input
-		BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-		try {
-			System.out.print(question);
-			String returnValue =  inputReader.readLine();
-			
-			// return null instead of empty string
-			if (returnValue != null && returnValue.trim().length() == 0) {
-				returnValue = null;
-			}
-			return returnValue;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-	public static void say(String sentence) {
-		System.out.print(sentence);
-	}
-	
 }
