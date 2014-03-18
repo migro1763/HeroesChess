@@ -266,15 +266,12 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	 // change location of given piece, if the location is valid.
 	 // If the location is not valid, move the piece back to its original
 	 // position.
-	public void setNewPieceLocation(PieceGui dragPiece, int x, int y) {
-		int targetPos = BitBoard.getPosFromCoords(ChessBoardGui.convertXToColumn(x), 
-													ChessBoardGui.convertYToRow(y));
-
-		Move move = new Move(dragPiece.getPos(), targetPos);
-		if((dragPiece.getMoveBits().getBits() & 1L<<targetPos) != 0) {
+	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
+		Move move = new Move(draggedPiece.getPos(), targetPos);
+		if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
 			game.getActivePlayer().setCurrentMove(move);
 		} else {
-			dragPiece.snapToNearestSquare();
+			draggedPiece.snapToNearestSquare();
 		}
 	}
 

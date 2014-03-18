@@ -1,6 +1,7 @@
 package players;
 
 import game.Move;
+import game.Speak;
 
 public abstract class Player {
 
@@ -46,6 +47,7 @@ public abstract class Player {
 
 	public void setCurrentMove(Move currentMove) {
 		this.currentMove = currentMove;
+		Speak.say("player => currentMove set to: " + this.currentMove, true);
 	}
 
 }

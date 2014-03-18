@@ -334,23 +334,33 @@ public class MoveGenerator {
 			Speak.say("\n!! => " + pieceType + " cannot move!", true);
 			
 		// routine for testing if possible moves can resolve king in check	
-		} else if(game.isChecked[colour]) { // if king is in check
+		} else if(game.getActivePlayer().isCheck()) { // if king is in check
 			if(testCheck(colour, moveBits)) return null;
 		}
 		return new BB(moveBits, colour);
 	}
 	
-	public static List<Move> bitsAsMoveList(BB moveBitsBB, int start) {	
-		return makeMove(moveBitsBB.getBits(), start);
-	}
+	public static Move makeMove(long moveBits, int start) {
+    	Move move = null;
+	    for (int pos=Long.numberOfTrailingZeros(moveBits); pos<64-Long.numberOfLeadingZeros(moveBits); pos++)
+	        if (((moveBits>>pos) & 1) == 1) {
+	        	move = new Move(start, pos);
+	        	break;
+	        }
+    	return move;
+    }
 	
-    public static List<Move> makeMove(long moveBits, int start) {
+    public static List<Move> makeMoveList(long moveBits, int start) {
     	List<Move> moves = new ArrayList<Move>();
 	    for (int i=Long.numberOfTrailingZeros(moveBits); i<64-Long.numberOfLeadingZeros(moveBits); i++)
 	        if (((moveBits>>i) & 1) == 1)
 	        	moves.add(new Move(start, i));
     	return moves;
     }
+    
+	public static List<Move> bitsAsMoveList(BB moveBitsBB, int start) {	
+		return makeMoveList(moveBitsBB.getBits(), start);
+	} 
 	
 	// tests if bitboard of moves and bits of opponent piece checking king, will be zero.
 	// if zero, king is still in check and true is returned. otherwise return false (no longer in check)

@@ -55,49 +55,12 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 				}
 			}
 		} 
-		// DEBUG: write array of all pieces in console
-		else {
-			for (int pos = 0; pos < 64; pos++)
-				Speak.say(pos + ": " + board.getGuiPiece(pos), true);
-		}
-		
-		// find out which piece to move.
-		// we check the list from top to bottom
-		// (therefore we iterate in reverse order)
-//		for (int i = guiPieces.size()-1; i >= 0; i--) {
-//			PieceGui guiPiece = guiPieces.get(i);
-//			if (guiPiece.isCaptured()) continue;
-//
-//			if(mouseOverPiece(guiPiece, x, y)) {	
-//				// only pick up pieces of same color as current player
-//				if(guiPiece.getColour() == board.getGame().getPlayerTurn()) {
-//					// calculate offset, because we do not want the drag piece
-//					// to jump with it's upper left corner to the current mouse
-//					// position
-//					dragOffsetX = x - guiPiece.getX();
-//					dragOffsetY = y - guiPiece.getY();
-//					board.setDragPiece(guiPiece);
-////					board.repaint();
-//					break;
-//				}
-//			}
-//		}
-		
-		// move drag piece to the top of the list
-//		if(board.getDragPiece() != null){
-//			guiPieces.remove(board.getDragPiece() );
-//			guiPieces.add(board.getDragPiece());
+//		// DEBUG: write array of all pieces in console
+//		else {
+//			for (int pos = 0; pos < 64; pos++)
+//				Speak.say(pos + ": " + board.getGuiPiece(pos), true);
 //		}
 	}
-
-	// check whether the mouse is currently over this piece
-//	private boolean mouseOverPiece(PieceGui guiPiece, int x, int y) {
-//
-//		return guiPiece.getX() <= x 
-//			&& guiPiece.getX()+guiPiece.getWidth() >= x
-//			&& guiPiece.getY() <= y
-//			&& guiPiece.getY()+guiPiece.getHeight() >= y;
-//	}
 	
 	private int getMouseOverPos(int x, int y) {
 		int pos = -1;
@@ -119,7 +82,7 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 			int y = evt.getPoint().y - dragOffsetY;
 			
 			// set game piece to the new location if possible
-			board.setNewPieceLocation(board.getDragPiece(), x, y);
+			board.setNewPieceLocation(board.getDragPiece(), getMouseOverPos(x, y));
 			board.repaint();
 			board.setDragPiece(null);
 		}
@@ -139,6 +102,7 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 			
 			board.repaint();
 		} else {
+			// moves the entire game window if not dragging a gui piece
 	        frame.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y);
 		}
 		

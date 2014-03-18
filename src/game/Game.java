@@ -13,7 +13,6 @@ public class Game implements Runnable, Vals {
 	private ChessBoardGui board;
 	private MoveGenerator moveGen;
 	private int playerTurn = COLOR_WHITE; // who's turn it is
-	public boolean[] isChecked = {false, false}; // set for each player if checked
 	public boolean[] kSideCastling = {true, true}; // true if player colour can castle king side
 	public boolean[] qSideCastling = {true, true}; // true if player colour can castle queen side
 	private Player blackPlayer = null, whitePlayer = null, activePlayer = null;
@@ -30,7 +29,6 @@ public class Game implements Runnable, Vals {
 		this.moveGen = clone.moveGen;
 		this.board = clone.board;
 		this.playerTurn = clone.playerTurn;
-		this.isChecked = clone.isChecked;
 		this.kSideCastling = clone.kSideCastling;
 		this.qSideCastling = clone.qSideCastling;
 		this.whitePlayer = clone.whitePlayer;
@@ -52,68 +50,72 @@ public class Game implements Runnable, Vals {
 			}
 		}
 		// set start player, white always starts game
-		activePlayer = whitePlayer;		
-		
-		// start game flow
+		activePlayer = whitePlayer;				
 		System.out.println("ChessGame: starting game flow");
-		Move selectedMove = null;
+		
+		// start game flow loop
+		boolean didMove = false;
 		while(!isGameOver()) {
-			if(selectedMove != null) {
-				activePlayer.setDragPiecesEnabled(false);
-				setPlayerTurn(1-playerTurn);	
-				Speak.say("\n====> Player turn: " + COLOUR_NAME[playerTurn], true);
-				selectedMove = null;
-				activePlayer.setDragPiecesEnabled(true);
-			}
-			selectedMove = gameLoop(history);
-//			activePlayer.moveSuccessfullyExecuted(selectedMove);
+			didMove = gameLoop(history);
+			changePlayerTurnAfterMove(didMove);
 		}
 	}
-	
-	public Move gameLoop(Move history) {
-		int selectedMoveNbr = -1;
+
+	public boolean gameLoop(Move history) {
 		int posOfPieceToMove = -1;
 		Move selectedMove = null;
+		boolean hasMoved = false;
 		
 		// list of moves as Move objects
-		List<Move> listOfMoves = new ArrayList<Move>();
+//		List<Move> listOfMoves = new ArrayList<Move>();
+//		int selectedMoveNbr = -1;
 		
 		// update OCCUPIED and EMPTY in the MoveGenerator object
 		moveGen.updateBBStates();
-		
-		// TODO: update & repaint GUI board
 		board.repaint();
-//		btb.drawArray(); 		// draw current chess board
 			
-		isChecked[playerTurn] = moveGen.isInCheck(playerTurn);
-		if(isChecked[playerTurn])	// tell whether current player is in check
+		activePlayer.setCheck(moveGen.isInCheck(playerTurn));
+		if(activePlayer.isCheck())	// tell whether current player is in check
 			Speak.say("\n!! => " + COLOUR_NAME[playerTurn] + " is in check!", true);
 		
 		// generate bitboard of moves in Moves->possibleMoves(), and set
 		// gui board's dragpiece's moveBits to it.
+		BB dragPieceMoveBits = new BB();
 		if(board.getDragPiece() != null) {
 			posOfPieceToMove = board.getDragPiece().getPos();
-			board.getDragPiece().setMoveBits(moveGen.possibleMoves(playerTurn, posOfPieceToMove, history));
+			dragPieceMoveBits = moveGen.possibleMoves(playerTurn, posOfPieceToMove, history);
+			board.getDragPiece().setMoveBits(dragPieceMoveBits);
+
 			// get list of moves from the bitboard
-			listOfMoves = MoveGenerator.bitsAsMoveList(
-					board.getDragPiece().getMoveBits(), posOfPieceToMove);
+//			listOfMoves = MoveGenerator.bitsAsMoveList(board.getDragPiece().getMoveBits(), posOfPieceToMove);
 		}
 		
-		if(!listOfMoves.isEmpty()) {
-			char typeToMove = btb.getArraySquare(posOfPieceToMove);
-			
-			// TODO: get selected move/target position from user as selectedMoveNbr (int)
+		// if list of moves contains any moves
+//		if(!listOfMoves.isEmpty()) {
 		
-			if((selectedMoveNbr >= 0) && (selectedMoveNbr < listOfMoves.size())) {
-			    long moveBits = 1L<<listOfMoves.get(selectedMoveNbr).getTrg();
+		if(dragPieceMoveBits.getBits() > 0L) {
+			char typeToMove = btb.getArraySquare(posOfPieceToMove);
+			long moveBits = 0L;
+			if(activePlayer.getCurrentMove() != null)
+				moveBits = 1L<<activePlayer.getCurrentMove().getTrg();
+			else
+				return false;
+			
+//			if((selectedMoveNbr >= 0) && (selectedMoveNbr < listOfMoves.size())) {
+			if((dragPieceMoveBits.getBits() & moveBits) > 0L) {	
+				
 				// if move is (still) causing a check
 			    if(moveGen.testCheck(playerTurn, moveBits))
-			    	selectedMoveNbr = -1;
+//			    	selectedMoveNbr = -1;
+			    	return false;
+			    
 			    else {			
-					// move the selected piece by selected move
-					btb.movePiece(listOfMoves.get(selectedMoveNbr));
+			    	selectedMove = activePlayer.getMove();
+			    	// move the selected piece by selected move
+		    		btb.movePiece(selectedMove);
 					// set history to last move
-					history = listOfMoves.get(selectedMoveNbr);
+			    	history = selectedMove;
+			    	activePlayer.moveSuccessfullyExecuted(selectedMove);
 					
 			    	// pawn promotion?
 					if(Character.toUpperCase(typeToMove) == 'P' && 
@@ -125,9 +127,11 @@ public class Game implements Runnable, Vals {
 						kSideCastling[playerTurn] = qSideCastling[playerTurn] = false;
 						int offset = (playerTurn == 0) ? 56 : 0;
 						// if king move was a castling, also move the corresponding rook
-						if(listOfMoves.get(selectedMoveNbr).equals(new Move(4 + offset, 6 + offset)))
+//						if(listOfMoves.get(selectedMoveNbr).equals(new Move(4 + offset, 6 + offset)))
+						if(selectedMove.equals(new Move(4 + offset, 6 + offset)))
 							btb.movePiece(new Move(7 + offset, 5 + offset));
-						else if(listOfMoves.get(selectedMoveNbr).equals(new Move(4 + offset, 2 + offset)))
+//						else if(listOfMoves.get(selectedMoveNbr).equals(new Move(4 + offset, 2 + offset)))
+						else if(selectedMove.equals(new Move(4 + offset, 2 + offset)))
 							btb.movePiece(new Move(0 + offset, 3 + offset));
 					}			
 					// if moved piece is a rook, negate corresponding side castling possibility
@@ -137,16 +141,25 @@ public class Game implements Runnable, Vals {
 						else if(posOfPieceToMove == 7 || posOfPieceToMove == 63) // if right side of board
 							kSideCastling[playerTurn] = false;	
 				}
-			    selectedMove = listOfMoves.get(selectedMoveNbr);
+//			    selectedMove = listOfMoves.get(selectedMoveNbr);
+			    hasMoved = true;
 			} else {
 				// -1 indicates no move was done, possibly due to wrong square selected or
 				// selected square's piece cannot move at all
-				selectedMoveNbr = -1;
-				
-			} // end if(selectedMoveNbr >= 0)
-			
+//				selectedMoveNbr = -1;
+				hasMoved = false;
+			} // end if(selectedMoveNbr >= 0)			
 		} // end if(!listOfMoves.isEmpty())
-		return selectedMove;
+		return hasMoved;
+	}
+	
+	private void changePlayerTurnAfterMove(boolean didMove) {
+		if(didMove) {
+//			activePlayer.setDragPiecesEnabled(false);
+			setPlayerTurn(1-playerTurn);	
+			Speak.say("\n====> Player turn: " + COLOUR_NAME[playerTurn], true);
+//			activePlayer.setDragPiecesEnabled(true);
+		}		
 	}
 	
 	public void setPlayer(int pieceColor, Player playerHandler) {
