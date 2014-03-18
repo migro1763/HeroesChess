@@ -12,14 +12,17 @@ public class Animator {
     public Unit unit;
 
     private volatile boolean running = false;
+    private volatile boolean idle = false;
 
     private long previousTime, speed, variance;
+	private long idlePause, previousIdleTime; // time in millis to pause between idle anims
     private int frameAtPause, currentFrame;
 
     public Animator(ArrayList<BufferedImage> frames){
         this.frames = frames;
         this.unit = null;
         this.variance = new Random().nextInt(10);
+		this.idlePause = (new Random().nextInt(20) + 10) * 500;
     }
 
     public void setSpeed(long speed){
@@ -49,23 +52,38 @@ public class Animator {
 		this.unit = unit;
 	}
 
-	public void update(long time) {
+	public void update(long time) {	
         if(running) {
+    		// pause sprite's idle animation until idlePause time has passed
+    		if(time - previousIdleTime >= idlePause) {
+    			idle = false;
+                previousIdleTime = time;
+    		}
             if(time - previousTime >= (speed + variance)) {
                 //Update the animation
-                if(currentFrame < frames.size()-1) {
+                if(currentFrame < frames.size()-1 && !idle) {
                 	currentFrame++;
                	} else {
                		currentFrame = 0;
+               		idle = true;
 				}
 				sprite = frames.get(currentFrame);
                 previousTime = time;
             }
         }
     }
+	
+	public long getIdlePause() {
+		return idlePause;
+	}
+
+	public void setIdlePause(long idlePause) {
+		this.idlePause = idlePause;
+	}
 
     public void play() {
         running = true;
+        idle = false;
         previousTime = 0;
         frameAtPause = 0;
         currentFrame = 0;

@@ -14,17 +14,13 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import players.Player;
 import game.ChessGame;
 import interfaces.Vals;
 import game.HeroesChessGame;
 import game.Move;
 import game.MoveValidator;
 import game.Piece;
-import game.Player;
-//import interfaces.IPlayerHandler;
-//import javax.swing.JPanel;
-//import java.net.URL;
-//import game.BinaryTree;
 
 /**
  * all x and y coordinates point to the upper left position of a component all
@@ -45,7 +41,7 @@ public class HeroesChessGui extends Player implements Vals {
 	private static final int PIECE_WIDTH = 66; // full = 88
 	private static final int PIECE_HEIGHT = 66;
 	
-	private static final int GUI_PIECE_SCALE= 13; // 10 = 100% scale
+	private static final int GUI_PIECE_SCALE = 13; // 10 = 100 % scale
 
 	private static final int PIECES_START_X = BOARD_START_X + (int)(SQUARE_WIDTH/2.0 - PIECE_WIDTH/2.0);
 	private static final int PIECES_START_Y = BOARD_START_Y + (int)(SQUARE_HEIGHT/2.0 - PIECE_HEIGHT/2.0);
@@ -58,7 +54,6 @@ public class HeroesChessGui extends Player implements Vals {
 
 	private HeroesChessGame hcg;
 	private List<GuiPiece> guiPieces = new ArrayList<GuiPiece>();
-//	private BinaryTree tree = new BinaryTree();
 
 	private GuiPiece dragPiece;
 
@@ -80,10 +75,7 @@ public class HeroesChessGui extends Player implements Vals {
     int whichUnit = 0;
     int whichState = 0;
 
-	/**
-	 * constructor - creating the user interface
-	 * @throws IOException
-	 */
+    // constructor - creating the user interface
 	public HeroesChessGui(HeroesChessGame hcg) throws IOException {
 		// create chess game
 		this.hcg = hcg;
@@ -123,9 +115,6 @@ public class HeroesChessGui extends Player implements Vals {
 		this.addMouseMotionListener(listener);
 	}
 
-	/**
-	 * @return textual description of current game state
-	 */
 	private String getGameStateAsText() {
 		String state = "unknown";
 		switch (this.chessGame.getGameState()) {
@@ -266,10 +255,7 @@ public class HeroesChessGui extends Player implements Vals {
 		repaint();
 	}
 
-	/**
-	 * check if the user is currently dragging a game piece
-	 * @return true - if the user is currently dragging a game piece
-	 */
+	// check if the user is currently dragging a game piece
 	private boolean isUserDraggingPiece() {
 		return this.dragPiece != null;
 	}
@@ -279,44 +265,27 @@ public class HeroesChessGui extends Player implements Vals {
 		return this.chessGame.getGameState();
 	}
 
-	/**
-	 * convert logical column into x coordinate
-	 * @return x coordinate for column
-	 */
+	// convert logical column into x coordinate
 	public static int convertColumnToX(int column){
 		return PIECES_START_X + SQUARE_WIDTH * column;
 	}
 
-	/**
-	 * convert logical row into y coordinate
-	 * @return y coordinate for row
-	 */
+	// convert logical row into y coordinate
 	public static int convertRowToY(int row){
 		return PIECES_START_Y + SQUARE_HEIGHT * (Piece.ROW_8 - row);
 	}
 
-	/**
-	 * convert x coordinate into logical column
-	 * @param x
-	 * @return logical column for x coordinate
-	 */
+	// convert x coordinate into logical column
 	public static int convertXToColumn(int x){
 		return (x - DRAG_TARGET_SQUARE_START_X)/SQUARE_WIDTH;
 	}
 
-	/**
-	 * convert y coordinate into logical row
-	 * @return logical row for y coordinate
-	 */
+	// convert y coordinate into logical row
 	public static int convertYToRow(int y){
 		return Piece.ROW_8 - (y - DRAG_TARGET_SQUARE_START_Y)/SQUARE_HEIGHT;
 	}
 
-	/**
-	 * change location of given piece, if the location is valid.
-	 * If the location is not valid, move the piece back to its original
-	 * position.
-	 */
+	// change location of given piece, if valid location, else move back to original position.
 	public void setNewPieceLocation(GuiPiece dragPiece, int x, int y) {
 		int targetRow = ChessGui.convertYToRow(y);
 		int targetColumn = ChessGui.convertXToColumn(x);
@@ -330,13 +299,10 @@ public class HeroesChessGui extends Player implements Vals {
 		}
 	}
 
-	/**
-	 * set the game piece that is currently dragged by the user
-	 */
+	// set the game piece that is currently dragged by the user
 	public void setDragPiece(GuiPiece guiPiece) {
 		this.dragPiece = guiPiece;
 	}
-
 
 	// @return the gui piece that the user is currently dragging
 	public GuiPiece getDragPiece(){
@@ -371,17 +337,12 @@ public class HeroesChessGui extends Player implements Vals {
 		this.repaint();
 	}
 
-	/**
-	 * @return true - if the user is allowed to drag game pieces
-	 */
+	// return true - if the user is allowed to drag game pieces
 	public boolean isDraggingGamePiecesEnabled(){
 		return draggingGamePiecesEnabled;
 	}
 
-	/**
-	 * get non-captured the gui piece at the specified position
-	 * @return the gui piece at the specified position, null if there is no piece
-	 */
+	// get non-captured the gui piece at the specified position
 	private GuiPiece getGuiPieceAt(int row, int column) {
 		for (GuiPiece guiPiece : this.guiPieces) {
 			if( guiPiece.getPiece().getRow() == row

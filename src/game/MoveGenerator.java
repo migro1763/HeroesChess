@@ -1,19 +1,19 @@
 package game;
 
-public class Moves {
-	public static final long FILE_AB=217020518514230019L; // 1's on all of column A + B (left side)
-	public static final long FILE_GH=-4557430888798830400L; // 1's on all of column G + H (right side)
-	public static final long CENTRE=103481868288L; // 1's on the 4 most centered squares
-	public static final long EXTENDED_CENTRE=66229406269440L; // 1's on the 16 most centered squares
-	public static final long KING_SIDE=-1085102592571150096L; // 1's on all squares on right half of board
-	public static final long QUEEN_SIDE=1085102592571150095L; // 1's on all squares on left half of board
-	public static final long KING_B7=460039L;
-	public static final long KNIGHT_C6=43234889994L;
-	public static final int CASTL_WR_L = 56, CASTL_WR_R = 63, CASTL_BR_L = 0, CASTL_BR_R = 7;
-	public static long OCCUPIED = 0L;
-	public static long BLACK_PIECES = 0L;
-	public static long WHITE_PAWNS_HAS_MOVED = 0L;
-	public static long EMPTY = 0L;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MoveGenerator {
+	private static final long FILE_AB = 217020518514230019L; // 1's on all of column A + B (left side)
+	private static final long FILE_GH = -4557430888798830400L; // 1's on all of column G + H (right side)
+//	private static final long CENTRE=103481868288L; // 1's on the 4 most centered squares
+//	private static final long EXTENDED_CENTRE=66229406269440L; // 1's on the 16 most centered squares
+//	private static final long KING_SIDE=-1085102592571150096L; // 1's on all squares on right half of board
+//	private static final long QUEEN_SIDE=1085102592571150095L; // 1's on all squares on left half of board
+	private static final int CASTL_BR_L = 0, CASTL_BR_R = 7;
+//	private static final int CASTL_WR_L = 56, CASTL_WR_R = 63;
+	private static long OCCUPIED = 0L;
+	private static long EMPTY = 0L;
 
 	// mask arrays	
     static long rankMask[] =/*from rank1 to rank8*/
@@ -38,12 +38,12 @@ public class Moves {
 	0x804020100000000L, 0x402010000000000L, 0x201000000000000L, 0x100000000000000L
     };
 		
-	HeroesChessGame hcg;
-	BitBoard gameBB;
+	public Game game;
+	public BitBoard gameBB;
 	
-	public Moves(HeroesChessGame hcg) {
-		this.hcg = hcg;
-		this.gameBB = hcg.getBitBoard();
+	public MoveGenerator(Game game) {
+		this.game = game;
+		this.gameBB = game.getBitBoard();
 	}
 	
 	// return boolean for whether space between start and end is empty
@@ -139,7 +139,7 @@ public class Moves {
 	}
 	
 	// pawn
-	public long getPawnMoves(String history, int pos, int colour, boolean attackOnly, BitBoard testBB) {
+	public long getPawnMoves(Move history, int pos, int colour, boolean attackOnly, BitBoard testBB) {
 		long binPos;
 		long andBits = 0L;
 		long empty = testBB.getEmpty();
@@ -149,29 +149,24 @@ public class Moves {
 		} else
 			binPos = 1L<<pos; // convert pos to binary
 		
-		// handle history if not ""
-		if(!history.isEmpty()) {
-			int[] hCoords = hcg.parseMove(history); // convert history string to int array
-	//		System.out.println(hcg.makeStdMove(hCoords[0], hCoords[1], hCoords[2], hCoords[3]));
-			int hStart = hCoords[0] * 8 + hCoords[1]; // convert history start row&column to 0-63 pos
-			int hEnd = hCoords[2] * 8 + hCoords[3]; // convert history end row&column to 0-63 pos
-			long binHStart = 1L<<hStart; // convert history start pos to binary
-			long binHEnd = 1L<<hEnd; // convert history end pos to binary
+		// handle history if not null
+		if(history != null) {
+//			long binHEnd = 1L<<history.getTrg(); // convert history end pos to binary
 			
 			// en passant
 			long validEnPassantsMask = (colour == 0) ? 
-					((binHStart & rankMask[1])<<15) & binHEnd>>>1 | // w left of b
-					((binHStart & rankMask[1])<<17) & binHEnd<<1 : // w right of b
-					((binHStart & rankMask[6])>>>15) & binHEnd<<1 | // b left of w
-					((binHStart & rankMask[6])>>>17) & binHEnd>>>1; // b right of w
+					((history.getSrc() & rankMask[1])<<15) & history.getTrg()>>>1 | // w left of b
+					((history.getSrc() & rankMask[1])<<17) & history.getTrg()<<1 : // w right of b
+					((history.getSrc() & rankMask[6])>>>15) & history.getTrg()<<1 | // b left of w
+					((history.getSrc() & rankMask[6])>>>17) & history.getTrg()>>>1; // b right of w
 				
 			andBits |= (colour == 0) ? // the square white would attack
 						(((validEnPassantsMask & binPos)>>>7 & empty) | // test left side of b
 						((validEnPassantsMask & binPos)>>>9 & empty)) & // test right side of b
-							binHStart<<8 : // the square black would attack
+							history.getSrc()<<8 : // the square black would attack
 						(((validEnPassantsMask & binPos)<<7 & empty) | // test left side of w
 						((validEnPassantsMask & binPos)<<9 & empty)) & // test right side of w
-							binHStart>>>8;
+							history.getSrc()>>>8;
 		}
 		
 		// attacks, if opponents present in attackable squares. 
@@ -200,7 +195,7 @@ public class Moves {
 	}
 	
 	// king
-	public long getKingMoves(String history, int colour, BitBoard testBB) {
+	public long getKingMoves(Move history, int colour, BitBoard testBB) {
 		long binPos = 1L<<testBB.getKingPos(colour); // convert pos to binary
 		// (clock-wise) n, n-e, e, s-e, s, s-w, w, n-w
 		long andBits = ((binPos>>>8 | binPos>>>7 | binPos<<1 | binPos<<9) & ~fileMask[0]) |
@@ -219,12 +214,12 @@ public class Moves {
 	public long getAttacks(char type, int colour, BitBoard testBB) {
 		long inversePieces = ~testBB.getColourPieces(colour);
 		switch(type) {
-			case 'p':	return getPawnMoves("", -1, colour, true, testBB);
+			case 'p':	return getPawnMoves(null, -1, colour, true, testBB);
 			case 'r':	return getHoriVertMoves(colour, testBB) & inversePieces;
 			case 'n':	return getKnightMoves(colour, testBB) & inversePieces;
 			case 'b':	return getDiagAntiDiagMoves(colour, testBB) & inversePieces;
 			case 'q':	return getQueenMoves(colour, testBB) & inversePieces;
-			case 'a':	long pawns = getPawnMoves("", -1, colour, true, testBB);
+			case 'a':	long pawns = getPawnMoves(null, -1, colour, true, testBB);
 						long rooks = getHoriVertMoves(colour, testBB) & inversePieces;			
 						long knights = getKnightMoves(colour, testBB) & inversePieces;
 						long bishops = getDiagAntiDiagMoves(colour, testBB) & inversePieces;
@@ -271,14 +266,14 @@ public class Moves {
         
         if(!isInCheck(colour)) { 	         
 	        // king side castling
-        	if(HeroesChessGame.kSideCastling[colour])
+        	if(game.kSideCastling[colour])
 		        if (((1L<<(CASTL_BR_L + offset)) & rookBB) != 0)
 		            if ((OCCUPIED & ((1L<<(5 + offset))|(1L<<(6 + offset)))) == 0) {
 		                list += (colour == 0) ? "7476" : "0406"; // king and rook moves
 		            }
 	        
 	        // queen side castling
-        	if(HeroesChessGame.qSideCastling[colour])
+        	if(game.qSideCastling[colour])
 		        if (((1L<<(CASTL_BR_R + offset)) & rookBB) != 0)
 		            if ((OCCUPIED & ((1L<<1)|(1L<<2)|(1L<<3))) == 0)
 		                list += (colour == 0) ? "7472" : "0402"; // king and rook moves
@@ -290,16 +285,12 @@ public class Moves {
 		BB pawnBB = gameBB.getBB((colour == 0) ? 'P' : 'p'); // pawn to promote
 		char knight = (colour == 0) ? 'N' : 'n'; // promotion choice 0
 		char queen = (colour == 0) ? 'Q' : 'q'; // promotion choice 1
-		gameBB.drawArray(pawnBB.getBits(), "pawns before");
 		String[] choices = {gameBB.getLongName(knight), gameBB.getLongName(queen)};
 		int promotionType = Speak.ask("What do you wish the pawn to be promoted to?", choices);
 		switch(promotionType) {
 			case 0: // if choosing knight
 				pawnBB.mulBits(~(1L<<pos)); // set pawn bit to 0 at pos
-				gameBB.drawArray(pawnBB.getBits(), "pawns after");
-				gameBB.drawArray(gameBB.getBB(knight).getBits(), "knights before");
 				gameBB.getBB(knight).addBits(1L<<pos); // set knight bit to 1 at pos
-				gameBB.drawArray(gameBB.getBB(knight).getBits(), "knights after");
 				break;
 			case 1: // if choosing queen
 				pawnBB.mulBits(~(1L<<pos)); // set pawn bit to 0 at pos
@@ -315,16 +306,16 @@ public class Moves {
 	}
 
 	// get possible moves for current player's piece at position start
-	public String possibleMoves(int colour, int start, String history) {	
+	public BB possibleMoves(int colour, int start, Move history) {	
 		long moveBits = 0L;	
 		char pieceType = gameBB.getArraySquare(start);
 		// test if trying to move piece of wrong colour
 		if((Character.isLowerCase(pieceType)&&colour==0) || (Character.isUpperCase(pieceType)&&colour==1)) {
 			Speak.say("\n!! => Cannot move opponent's piece!\n");
-			return "";
+			return null;
 		} else if(pieceType == ' ') {
 			Speak.say("\n!! => That square is empty!\n");
-			return "";
+			return null;
 		}
 		switch(Character.toUpperCase(pieceType)) {
 			case 'R': moveBits = getHoriVertMoves(start, colour, gameBB); break;
@@ -343,16 +334,23 @@ public class Moves {
 			Speak.say("\n!! => " + pieceType + " cannot move!", true);
 			
 		// routine for testing if possible moves can resolve king in check	
-		} else if(HeroesChessGame.isChecked[colour]) { // if king is in check
-			if(testCheck(colour, moveBits)) return "";
+		} else if(game.isChecked[colour]) { // if king is in check
+			if(testCheck(colour, moveBits)) return null;
 		}
-		Speak.say("Moving: " + pieceType);		
-		
-		if(moveBits > 0L)
-			gameBB.drawArray(moveBits);
-
-	    return makeMove(moveBits, start);
+		return new BB(moveBits, colour);
 	}
+	
+	public static List<Move> bitsAsMoveList(BB moveBitsBB, int start) {	
+		return makeMove(moveBitsBB.getBits(), start);
+	}
+	
+    public static List<Move> makeMove(long moveBits, int start) {
+    	List<Move> moves = new ArrayList<Move>();
+	    for (int i=Long.numberOfTrailingZeros(moveBits); i<64-Long.numberOfLeadingZeros(moveBits); i++)
+	        if (((moveBits>>i) & 1) == 1)
+	        	moves.add(new Move(start, i));
+    	return moves;
+    }
 	
 	// tests if bitboard of moves and bits of opponent piece checking king, will be zero.
 	// if zero, king is still in check and true is returned. otherwise return false (no longer in check)
@@ -368,12 +366,4 @@ public class Moves {
 		}
 		return false;
 	}
-	
-    public String makeMove(long moveBits, int start) {
-    	String moves = "";
-	    for (int i=Long.numberOfTrailingZeros(moveBits); i<64-Long.numberOfLeadingZeros(moveBits); i++)
-	        if (((moveBits>>i) & 1) == 1)
-	        	moves += ""+(start/8)+(start%8)+(i/8)+(i%8);
-    	return moves;
-    }
 }

@@ -7,32 +7,14 @@ public class BitBoard {
 	
 	// variable declarations
 	private char[][] chessBoard = {
-	        {'r','n','b','q','k','b','n','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
-	        {'p','p','p','p','p','p','p','p'}, // ' 8',' 9','10','11','12','13','14','15'
-	        {' ',' ',' ',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
-	        {' ',' ',' ',' ',' ',' ',' ',' '}, // '24','25','26','27','28','29','30','31'
-	        {' ',' ',' ',' ',' ',' ',' ',' '}, // '32','33','34','35','36','37','38','39'
-	        {' ',' ',' ',' ',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
-	        {'P','P','P','P','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
-	        {'R','N','B','Q','K','B','N','R'}  // '56','57','58','59','60','61','62','63'
-	        
-//	        {'r',' ','b','q','k',' ','n',' '}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
-//	        {' ','p','p','p','p','p','p','p'}, // ' 8',' 9','10','11','12','13','14','15'
-//	        {' ',' ','n',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
-//	        {' ',' ',' ','Q',' ','K',' ',' '}, // '24','25','26','27','28','29','30','31'
-//	        {' ',' ',' ','R',' ','r',' ',' '}, // '32','33','34','35','36','37','38','39'
-//	        {' ',' ','b',' ',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
-//	        {'P','P','P','P','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
-//	        {' ','N','B',' ',' ','B','N','R'}  // '56','57','58','59','60','61','62','63'
-			
-//	        {'r',' ',' ',' ','k','b',' ','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
-//	        {'p','b','p',' ','p',' ','P','p'}, // ' 8',' 9','10','11','12','13','14','15'
-//	        {' ','p','n','q',' ','p',' ','n'}, // '16','17','18','19','20','21','22','23'
-//	        {' ',' ',' ','p',' ',' ',' ',' '}, // '24','25','26','27','28','29','30','31'
-//	        {' ',' ',' ',' ',' ',' ',' ',' '}, // '32','33','34','35','36','37','38','39'
-//	        {'N','P',' ',' ',' ','P',' ','N'}, // '40','41','42','43','44','45','46','47'
-//	        {'P',' ','P','P','P',' ',' ','P'}, // '48','49','50','51','52','53','54','55'
-//	        {'R',' ','B','Q','K','B',' ','R'}  // '56','57','58','59','60','61','62','63'	
+        {'r','n','b','q','k','b','n','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
+        {'p','p','p','p','p','p','p','p'}, // ' 8',' 9','10','11','12','13','14','15'
+        {' ',' ',' ',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
+        {' ',' ',' ',' ',' ',' ',' ',' '}, // '24','25','26','27','28','29','30','31'
+        {' ',' ',' ',' ',' ',' ',' ',' '}, // '32','33','34','35','36','37','38','39'
+        {' ',' ',' ',' ',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
+        {'P','P','P','P','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
+        {'R','N','B','Q','K','B','N','R'}  // '56','57','58','59','60','61','62','63'	
 	};
 	
 	private BB wp = new BB(0L, 0);
@@ -48,17 +30,17 @@ public class BitBoard {
 	private BB bq = new BB(0L, 1);
 	private BB bk = new BB(0L, 1);	
 	
-	private HeroesChessGame hcg;
+	private Game game;
 	// end variable declarations
 	
-	public BitBoard(HeroesChessGame hcg) {
-		this.hcg = hcg;
+	public BitBoard(Game game) {
+		this.game = game;
 		initializeBoard();
 	}
 	
 	// cloning constructor
 	public BitBoard(BitBoard clone) {
-		this.hcg = clone.hcg;
+		this.game = clone.game;
 		this.wp = clone.wp;
 		this.wr = clone.wr;
 		this.wn = clone.wn;
@@ -125,10 +107,6 @@ public class BitBoard {
 		return ~getOccupied(); 
 	}
     
-	public long flip(long board) {
-		return Long.reverse(board);
-	}
-    
     public void drawArray(long bitboard) {
     	char[][] newBoard = new char[8][8];
     	if(bitboard == -1L)
@@ -161,22 +139,26 @@ public class BitBoard {
     }
     
     public char getArraySquare(int position) {
-    	if (BigInteger.valueOf(wp.getBits()).testBit(position)) return 'P';
-    	if (BigInteger.valueOf(wn.getBits()).testBit(position)) return 'N';
-    	if (BigInteger.valueOf(wb.getBits()).testBit(position)) return 'B';
-    	if (BigInteger.valueOf(wr.getBits()).testBit(position)) return 'R';
-    	if (BigInteger.valueOf(wq.getBits()).testBit(position)) return 'Q';
-    	if (BigInteger.valueOf(wk.getBits()).testBit(position)) return 'K';
-    	if (BigInteger.valueOf(bp.getBits()).testBit(position)) return 'p';
-    	if (BigInteger.valueOf(bn.getBits()).testBit(position)) return 'n';
-    	if (BigInteger.valueOf(bb.getBits()).testBit(position)) return 'b';
-    	if (BigInteger.valueOf(br.getBits()).testBit(position)) return 'r';
-    	if (BigInteger.valueOf(bq.getBits()).testBit(position)) return 'q';
-    	if (BigInteger.valueOf(bk.getBits()).testBit(position)) return 'k';   	
-    	else return ' '; // otherwise return blank square
+    	if(position>=0 && position<64) {
+	    	if (BigInteger.valueOf(wp.getBits()).testBit(position)) return 'P';
+	    	if (BigInteger.valueOf(wn.getBits()).testBit(position)) return 'N';
+	    	if (BigInteger.valueOf(wb.getBits()).testBit(position)) return 'B';
+	    	if (BigInteger.valueOf(wr.getBits()).testBit(position)) return 'R';
+	    	if (BigInteger.valueOf(wq.getBits()).testBit(position)) return 'Q';
+	    	if (BigInteger.valueOf(wk.getBits()).testBit(position)) return 'K';
+	    	if (BigInteger.valueOf(bp.getBits()).testBit(position)) return 'p';
+	    	if (BigInteger.valueOf(bn.getBits()).testBit(position)) return 'n';
+	    	if (BigInteger.valueOf(bb.getBits()).testBit(position)) return 'b';
+	    	if (BigInteger.valueOf(br.getBits()).testBit(position)) return 'r';
+	    	if (BigInteger.valueOf(bq.getBits()).testBit(position)) return 'q';
+	    	if (BigInteger.valueOf(bk.getBits()).testBit(position)) return 'k';
+    	}
+    	return ' ';
     }
     
-    public int getPosFromMove(String move, int coord) { // coord 0 = x1, 1 = y1, 2 = x2, 3 = y2
+    // *** OBSOLETE METHODS! ***
+    // coord 0 = x1, 1 = y1, 2 = x2, 3 = y2
+    public int getPosFromMove(String move, int coord) {
     	switch(coord) {
 	    	case 0: return Integer.parseInt(move.substring(0,1));
 	    	case 1: return Integer.parseInt(move.substring(1,2));
@@ -186,11 +168,12 @@ public class BitBoard {
     	}
     }
     
-    public int getPosFromCoords(int x, int y) {
+    public static int getPosFromCoords(int x, int y) {
     	return y + (x * 8);
     }
+    // *** OBSOLETE METHODS END ***
     
-    public String getLongName(char type) {
+    public static String getLongName(char type) {
     	String colour = (Character.isUpperCase(type)) ? "White " : "Black ";
     	switch(Character.toUpperCase(type)) {
     		case 'P':	return colour + "pawn";
@@ -203,16 +186,12 @@ public class BitBoard {
     	}
     }
  		
-	public void movePiece(String move) {
+	public void movePiece(Move move) {
 		BB bitboard;
-        int source = getPosFromMove(move, 1) + getPosFromMove(move, 0) * 8;
-        int target = getPosFromMove(move, 3) + getPosFromMove(move, 2) * 8;
-        char type = getArraySquare(source);
-        char oppType = getArraySquare(target);
-        Speak.say("movePiece: " + type + " moving to " + target + "(" + hcg.makeStdPos(target) + ")", true);
+        char type = getArraySquare(move.getSrc());
+        char oppType = getArraySquare(move.getTrg());
         if(oppType != ' ') {
-        	Speak.say(", capturing " + oppType);
-        	setBB(oppType, target, 0); // setting piece on target square's bitboard to 0 at target pos
+        	setBB(oppType, move.getTrg(), 0); // setting piece on target square's bitboard to 0 at target pos
         	// PS: setBB has a debug-print of bitboard of remaining opponents type
         } else
         	Speak.say("", true);
@@ -243,15 +222,15 @@ public class BitBoard {
 	            break;
 	        default:	bitboard = new BB();
         }
-        bitboard.mulBits((bitboard.getBits() & ~(1L << source))); // set source to false (0)
-    	bitboard.addBits((bitboard.getBits() | (1L << target))); // set target to true (1)
+        bitboard.mulBits((bitboard.getBits() & ~(1L << move.getSrc()))); // set source to false (0)
+    	bitboard.addBits((bitboard.getBits() | (1L << move.getTrg()))); // set target to true (1)
 	}
 	
 	public int getKingPos(int colour) {
 		return getPos((colour == 0) ? wk : bk);
 	}
 	
-	public int getPos(BB bb) {
+	public static int getPos(BB bb) {
 		int pos;
 		for (pos = 0; pos < 64; pos++)
 			if(BigInteger.valueOf(bb.getBits()).testBit(pos))
@@ -259,11 +238,11 @@ public class BitBoard {
 		return pos;
 	}
 	
-	public int getPos(long bitboard) {
+	public static int getPos(long bitboard) {
 		return getPos(new BB(bitboard, 0));
 	}
 	
-	public int[] getMultiPos(long bitboard) {
+	public static int[] getMultiPos(long bitboard) {
 		int howManyBits = Long.bitCount(bitboard);
 		int[] positions = new int[howManyBits];
 		int pos = 0;

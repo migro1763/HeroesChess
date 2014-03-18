@@ -7,6 +7,8 @@ import java.util.List;
 //import interfaces.IPlayerHandler;
 //import java.io.IOException;
 
+import players.Player;
+
 public class ChessGame implements Runnable {
 
 	public int gameState = GAME_STATE_WHITE;

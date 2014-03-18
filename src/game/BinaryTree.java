@@ -19,7 +19,7 @@ public class BinaryTree {
 			while(true) {
 				parent = focusNode;
 
-				if(piece.getPiece().id < focusNode.id) {
+				if(piece.getPiece().getId() < focusNode.id) {
 					focusNode = focusNode.leftChild;
 
 					if(focusNode == null) {
@@ -57,7 +57,7 @@ public class BinaryTree {
 	}
 	
 	public Node findNode(GuiPiece piece) {
-		return findNode(piece.getPiece().id);
+		return findNode(piece.getPiece().getId());
 	}
 
 	public void inOrderTraverseTree(Node focusNode) {
@@ -78,7 +78,7 @@ public class BinaryTree {
 		Node leftChild, rightChild;
 
 		public Node(GuiPiece guiPiece) {
-			this.id = guiPiece.getPiece().id;
+			this.id = guiPiece.getPiece().getId();
 			this.guiPiece = guiPiece;
 		}
 

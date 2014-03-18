@@ -1,35 +1,36 @@
-package ai;
+package aiAlgorithms;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import players.Player;
 import game.ChessGame;
+import game.Game;
 import game.GameMethods;
+import game.HeroesChessGame;
 import game.Move;
 import game.MoveValidator;
+import game.MoveGenerator;
 import game.Piece;
-import game.Player;
-//import interfaces.IPlayerHandler;
-//import gui.ChessGui;
 
 //public class SimpleAiPlayerHandler implements IPlayerHandler {
 public class SimpleAiPlayerHandler extends Player {
 
 	private static final long serialVersionUID = 273343436651733806L;
-	private ChessGame actualGame, chessGame;
-	private MoveValidator validator;
+	private Game actualGame, game;
+	private MoveGenerator moves;
 	
 	// number of moves to look into the future
 	public int maxDepth = 1;
 
-	public SimpleAiPlayerHandler(ChessGame chessGame) {
-		this.actualGame = chessGame;
+	public SimpleAiPlayerHandler(Game game) {
+		this.actualGame = game;
 	}
 
 	@Override
 	public Move getMove() {
-		this.chessGame = new ChessGame(this.actualGame);
-		this.validator = new MoveValidator(this.chessGame);
+		this.game = new Game(this.actualGame);
+		this.moves = new MoveGenerator(this.game);
 		return getBestMove();
 	}
 
@@ -40,7 +41,7 @@ public class SimpleAiPlayerHandler extends Player {
 	private Move getBestMove() {
 		System.out.println("Thinking...");
 		
-		List<Move> validMoves = generateMoves(false);
+		List<Move> validMoves = moves.possibleMoves(game.getPlayerTurn(), start, history);
 		int bestResult = Integer.MIN_VALUE;
 		Move bestMove = null;
 		for (Move move : validMoves) {

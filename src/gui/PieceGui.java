@@ -1,19 +1,15 @@
 package gui;
 
-import game.BB;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
+import interfaces.Declarations;
 import pieces.Piece;
 
-public class GuiPiece {
+public class PieceGui extends Piece implements Declarations {
 	
 	// animation states
 	private int state = 0;
-	public static final int STATE_IDLE = 0;
-	public static final int STATE_WALK = 1;
-	public static final int STATE_ATTACK = 2;
-	public static final int STATE_DEATH = 3;
 	
 	private BufferedImage img;
 	private ArrayList<Animator> anim;
@@ -26,9 +22,10 @@ public class GuiPiece {
 	private long speed = 150;
 	private volatile boolean running = false;
 
-	public GuiPiece(ArrayList<Animator> anim) {
+	public PieceGui(Piece piece, ArrayList<Animator> anim) {
+		super(piece.getColour(), piece.getType(), piece.getPos(), piece.getId());
 		this.anim = anim;
-		this.resetToUnderlyingPiecePosition();
+		snapToNearestSquare();
 	}
 	
 	public BufferedImage getImage(int state) {
@@ -48,12 +45,12 @@ public class GuiPiece {
 	}
 
 	public void setX(int x) {
-		this.prevX = this.x;
+		prevX = this.x;
 		this.x = x;
 	}
 
 	public void setY(int y) {
-		this.prevY = this.y;
+		prevY = this.y;
 		this.y = y;
 	}
 
@@ -74,7 +71,7 @@ public class GuiPiece {
 	}
 
 	public int getWidth() {
-		return anim.get(state).sprite.getHeight(null);
+		return anim.get(state).sprite.getWidth(null);
 	}
 
 	public int getHeight() {
@@ -85,23 +82,23 @@ public class GuiPiece {
 	 * snap the guiPiece back to the coordinates that
 	 * correspond with the underlying piece's row and column
 	 */
-	public void resetToUnderlyingPiecePosition() {
-		this.x = ChessGui.convertColumnToX(piece.getColumn());
-		this.y = ChessGui.convertRowToY(piece.getRow());
+	public void snapToNearestSquare() {
+		x = ChessBoardGui.convertColumnToX(getColumn());
+		y = ChessBoardGui.convertRowToY(getRow());
 	}
 	
 	// unfinished!
 	public void update(long time) {
         if(isRunning()) {
-        	int currentX = this.x;
+        	int currentX = x;
             if(time - previousTime >= speed) {
                 //Update the animation
-                if(currentX < this.x) {
-                	this.x++;
+                if(currentX < x) {
+                	x++;
                	} else {
                		currentX = 0;
 				}
-				this.x = currentX;
+				x = currentX;
 
                 previousTime = time;
             }
@@ -114,14 +111,6 @@ public class GuiPiece {
 
 	public void setRunning(boolean running) {
 		this.running = running;
-	}
-
-	public Piece getPiece() {
-		return piece;
-	}
-
-	public boolean isCaptured() {
-		return this.piece.isCaptured();
 	}
 
 	public int getState() {

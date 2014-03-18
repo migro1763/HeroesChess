@@ -1,35 +1,18 @@
 package pieces;
 
-public abstract class Piece {
+import game.BB;
+import game.Game;
+
+public class Piece extends Movable {
 		
 	protected boolean isCaptured = false;
+	protected char type;
+	private BB moveBits;
 
-	public Piece() {
-		
-	}
-	
-	// get unit nbr for animated sprite loading
-//	public int getUnitNbr() {
-//		switch(this.type) {
-//		case TYPE_ROOK:
-//			return (this.color) ? 5 : 11;
-//		case TYPE_KNIGHT:
-//			return (this.color) ? 1 : 7;
-//		case TYPE_BISHOP:
-//			return (this.color) ? 2 : 8;
-//		case TYPE_QUEEN:
-//			return (this.color) ? 3 : 9;
-//		case TYPE_KING:
-//			return (this.color) ? 0 : 6;
-//		case TYPE_PAWN:
-//			return (this.color) ? 4 : 10;		
-//		}
-//		return -1;
-//	}
-	
-	@Override
-	public String toString() {	
-		return "";
+	public Piece(int colour, char type, int pos, int id) {
+		super(colour, pos, id);
+		this.type = type;
+		this.moveBits = new BB(0L, colour);
 	}
 
 	public void isCaptured(boolean isCaptured) {
@@ -39,11 +22,44 @@ public abstract class Piece {
 	public boolean isCaptured() {
 		return this.isCaptured;
 	}
-	
-	public Piece clone() {
-		return null;
-	};
-	
-	public abstract String possibleMoves(long bitBoard);
 
+	public char getType() {
+		return type;
+	}
+
+	public void setType(char type) {
+		this.type = type;
+	}
+
+	public BB getMoveBits() {
+		return moveBits;
+	}
+
+	public void setMoveBits(BB moveBits) {
+		this.moveBits = moveBits;
+	}
+	
+	// get unit nbr for animated sprite loading
+	public int getUnitNbr() {
+		switch(Character.toLowerCase(getType())) {
+		case 'r':
+			return (colour == 0) ? 5 : 11;
+		case 'n':
+			return (colour == 0) ? 1 : 7;
+		case 'b':
+			return (colour == 0) ? 2 : 8;
+		case 'q':
+			return (colour == 0) ? 3 : 9;
+		case 'k':
+			return (colour == 0) ? 0 : 6;
+		case 'p':
+			return (colour == 0) ? 4 : 10;		
+		}
+		return -1;
+	}
+	
+	@Override
+	public String toString() {
+		return Game.getLongName(type) + " at " + Game.makeStdPos(pos);
+	}
 }

@@ -14,16 +14,12 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import players.Player;
 import game.ChessGame;
 import interfaces.Declarations;
 import game.Move;
 import game.MoveValidator;
 import game.Piece;
-import game.Player;
-//import interfaces.IPlayerHandler;
-//import javax.swing.JPanel;
-//import java.net.URL;
-//import game.BinaryTree;
 
 /**
  * all x and y coordinates point to the upper left position of a component all
@@ -35,22 +31,17 @@ public class ChessGui extends Player implements Declarations {
 
 	private static final long serialVersionUID = -8207574964820892354L;
 	
-	private static final int BOARD_START_X = 218;
-	private static final int BOARD_START_Y = 123;
-
-	private static final int SQUARE_WIDTH = 74; // full = 100
-	private static final int SQUARE_HEIGHT = 74;
-
-	private static final int PIECE_WIDTH = 66; // full = 88
-	private static final int PIECE_HEIGHT = 66;
-	
-	private static final int GUI_PIECE_SCALE= 13; // 10 = 100% scale
-
-	private static final int PIECES_START_X = BOARD_START_X + (int)(SQUARE_WIDTH/2.0 - PIECE_WIDTH/2.0);
-	private static final int PIECES_START_Y = BOARD_START_Y + (int)(SQUARE_HEIGHT/2.0 - PIECE_HEIGHT/2.0);
-
-	private static final int DRAG_TARGET_SQUARE_START_X = BOARD_START_X - (int)(PIECE_WIDTH/2.0);
-	private static final int DRAG_TARGET_SQUARE_START_Y = BOARD_START_Y - (int)(PIECE_HEIGHT/2.0);
+//	private static final int BOARD_START_X = 218;
+//	private static final int BOARD_START_Y = 123;
+//	private static final int SQUARE_WIDTH = 74; // full = 100
+//	private static final int SQUARE_HEIGHT = 74;
+//	private static final int PIECE_WIDTH = 66; // full = 88
+//	private static final int PIECE_HEIGHT = 66;
+//	private static final int GUI_PIECE_SCALE= 13; // 10 = 100% scale
+//	private static final int PIECES_START_X = BOARD_START_X + (int)(SQUARE_WIDTH/2.0 - PIECE_WIDTH/2.0);
+//	private static final int PIECES_START_Y = BOARD_START_Y + (int)(SQUARE_HEIGHT/2.0 - PIECE_HEIGHT/2.0);
+//	private static final int DRAG_TARGET_SQUARE_START_X = BOARD_START_X - (int)(PIECE_WIDTH/2.0);
+//	private static final int DRAG_TARGET_SQUARE_START_Y = BOARD_START_Y - (int)(PIECE_HEIGHT/2.0);
 
 	private Image imgBackground;
 	private JLabel lblGameState;
@@ -100,10 +91,6 @@ public class ChessGui extends Player implements Declarations {
 		for (Piece piece : this.chessGame.getPieces()) {
 			createAndAddGuiPiece(piece);
 		}
-		
-//		// add guiPieces to binary tree, for fast searches
-//		for (GuiPiece guiPiece : this.guiPieces)
-//			tree.addNode(guiPiece);
 			
 		// label to display game state
 		String labelText = this.getGameStateAsText();
@@ -201,44 +188,6 @@ public class ChessGui extends Player implements Declarations {
 		}
 		return null;
     }
-
-//	/**
-//	 * load image for given color and type. This method translates the color and
-//	 * type information into a filename and loads that particular file.
-//	 *
-//	 * @return image
-//	 * @throws IOException
-//	 */
-//	private Image getImageForPiece(int color, int type, int nbr) throws IOException {
-//
-//		String filename = "classic/small/";
-//
-//		filename += (color == Piece.COLOR_WHITE ? "w" : "b");
-//		switch (type) {
-//			case Piece.TYPE_BISHOP:
-//				filename += "b" + nbr;
-//				break;
-//			case Piece.TYPE_KING:
-//				filename += "k";
-//				break;
-//			case Piece.TYPE_KNIGHT:
-//				filename += "n" + nbr;
-//				break;
-//			case Piece.TYPE_PAWN:
-//				filename += "p";
-//				break;
-//			case Piece.TYPE_QUEEN:
-//				filename += "q";
-//				break;
-//			case Piece.TYPE_ROOK:
-//				filename += "r" + nbr;
-//				break;
-//		}
-//		filename += ".png";
-//
-//		Image img = ImageIO.read(new File(IMG_PATH + filename));
-//		return new ImageIcon(img).getImage();
-//	}
 
 	@Override
 	protected void paintComponent(Graphics g) {

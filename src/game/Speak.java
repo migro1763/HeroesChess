@@ -47,6 +47,10 @@ public class Speak {
 		}
 	}
 	
+	public static void say() {
+		System.out.println();
+	}
+	
 	public static void say(String sentence) {
 		System.out.print(sentence);
 	}

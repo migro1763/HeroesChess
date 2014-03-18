@@ -5,10 +5,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import ai.SimpleAiPlayerHandler;
-import gui.ChessGui;
+import aiAlgorithms.SimpleAiPlayerHandler;
+import gui.ChessBoardGui;
 import pieces.Piece;
-import game.ChessGame;
+import players.Computer;
+import players.Human;
+import players.Player;
 //import interfaces.IPlayerHandler;
 //import net.XmlRpcPlayerHandler;
 
@@ -22,16 +24,17 @@ public class HeroesChess implements Vals {
 
 		// ask for player handlers to be used for this game
 		//
-		String[] iPlayerHandlerOptions = new String[] {
-			"Swing GUI", "AI Player"
-		}; //, "Network Player"
-		int whitePlayerOption = Speak.ask("What should be the white player?", iPlayerHandlerOptions);
-		int blackPlayerOption = Speak.ask("What should be the black player?", iPlayerHandlerOptions);
+//		String[] iPlayerHandlerOptions = new String[] {
+//			"Swing GUI", "AI Player"
+//		}; //, "Network Player"
+//		int whitePlayerOption = Speak.ask("What should be the white player?", iPlayerHandlerOptions);
+//		int blackPlayerOption = Speak.ask("What should be the black player?", iPlayerHandlerOptions);
+		int whitePlayerOption = 0;
+		int blackPlayerOption = 0;
 
 		// in case of network players, ask for details
-		//
-//		String gameIdOnServer = null;
-//		String gamePassword = null;
+		String gameIdOnServer = null;
+		String gamePassword = null;
 //		if(whitePlayerOption == PLAYER_OPTION_NETWORK) {
 //			gameIdOnServer = Speak.ask("Game ID on server:");
 //			gamePassword = Speak.ask("Password for game:");
@@ -42,13 +45,11 @@ public class HeroesChess implements Vals {
 //		}
 
 		// create the game logic
-		HeroesChessGame hcg = new HeroesChessGame();
+		Game game = new Game();
 
 		// assign white and black player
-		IPlayerHandler playerWhite = getPlayerHandler(whitePlayerOption, hcg, gameIdOnServer, gamePassword);
-		IPlayerHandler playerBlack = null;
-		
-		Player playerWhite = getPlayerHandler(whitePlayerOption, hcg, gameIdOnServer, gamePassword);
+//		Player playerWhite = getPlayerHandler(whitePlayerOption, game, gameIdOnServer, gamePassword);
+		Player playerWhite = getPlayerHandler(0, game, gameIdOnServer, gamePassword);
 		Player playerBlack = null;
 		
 		// if white and black are the same (e.g. both Swing or both Console)
@@ -58,45 +59,23 @@ public class HeroesChess implements Vals {
 		if (whitePlayerOption == blackPlayerOption) {
 			playerBlack = playerWhite;
 		} else {
-			playerBlack = getPlayerHandler(blackPlayerOption, hcg, gameIdOnServer, gamePassword);			
+			playerBlack = getPlayerHandler(blackPlayerOption, game, gameIdOnServer, gamePassword);			
 		}
 
 		// then we attach the clients/players to the game
-		hcg.setPlayer(0, playerWhite);
-		hcg.setPlayer(1, playerBlack);
+		game.setPlayer(0, playerWhite);
+		game.setPlayer(1, playerBlack);
 
 		// in the end we start the game
-		new Thread(hcg).start();
+		new Thread(game).start();
 	}
 	
-	/**
-	 * Get the IPlayerHandler implementation for the specified playerHandlerOption
-	 * @param playerHandlerOption - one of PLAYER_OPTION_..
-	 * @param chessGame - a ChessGame instance
-	 * @param gameIdOnServer - only applicable for PLAYER_OPTION_NETWORK.
-	 *                         parameter should be empty for creating a new game
-	 *                         and filled for joining an existing network game
-	 * @param gamePassword - only applicable for PLAYER_OPTION_NETWORK.
-	 *                       password for the network game
-	 * @return IPlayerHandler implementation
-	 * @throws IOException 
-	 */
-//	private static IPlayerHandler getPlayerHandler(int playerHandlerOption,
-//			ChessGame chessGame, String gameIdOnServer, String gamePassword) throws IOException {
-//		switch (playerHandlerOption) {
-//			case PLAYER_OPTION_AI: return new SimpleAiPlayerHandler(chessGame);
-//			//case PLAYER_OPTION_NETWORK: return new XmlRpcPlayerHandler(gameIdOnServer,gamePassword);
-//			case PLAYER_OPTION_SWING: return new ChessGui(chessGame);
-//			default: throw new IllegalArgumentException("Invalid player option:" + playerHandlerOption);
-//		}
-//	}
-	
 	private static Player getPlayerHandler(int playerHandlerOption,
-			ChessGame chessGame, String gameIdOnServer, String gamePassword) throws IOException {
+			Game game, String gameIdOnServer, String gamePassword) throws IOException {
 		switch (playerHandlerOption) {
-			case PLAYER_OPTION_AI: return new SimpleAiPlayerHandler(chessGame);
+			case PLAYER_OPTION_AI: return new Computer();
 			//case PLAYER_OPTION_NETWORK: return new XmlRpcPlayerHandler(gameIdOnServer,gamePassword);
-			case PLAYER_OPTION_SWING: return new ChessGui(chessGame);
+			case PLAYER_OPTION_SWING: return new Human();
 			default: throw new IllegalArgumentException("Invalid player option:" + playerHandlerOption);
 		}
 	}
