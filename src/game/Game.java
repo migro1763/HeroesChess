@@ -90,14 +90,14 @@ public class Game implements Runnable, Vals {
 //			Speak.say();
 //			// DEBUG END
 		
-			if(dragPieceMoveBits.getBits() > 0L) {
+			if(dragPieceMoveBits.getBits() != 0L) {
 				long moveBits = 0L;
 				if(activePlayer.getCurrentMove() != null)
 					moveBits = 1L<<activePlayer.getCurrentMove().getTrg();
 				else
 					return false;
 				
-				if((dragPieceMoveBits.getBits() & moveBits) > 0L) {			
+				if((dragPieceMoveBits.getBits() & moveBits) != 0L) {			
 					// if move is (still) causing a check
 				    if(moveGen.testCheck(playerTurn, moveBits))
 				    	return false;    
@@ -105,37 +105,43 @@ public class Game implements Runnable, Vals {
 				    	selectedMove = activePlayer.getMove();
 				    	// move the selected piece by selected move
 			    		btb.movePiece(selectedMove);
+			    		// do pawn promotion and finish castling setup (move rook etc.)
+			    		
+			    		// snap the moved piece to its nearest square
 			    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
 						// set history to last move
 				    	history = selectedMove;
+				    	// finish move setup for active player
 				    	activePlayer.moveSuccessfullyExecuted(selectedMove);
 				    	// recreate and reposition all gui pieces, according to latest bitboards
 						board.createGuiPieceArray();
+						moveGen.pawnPromoAndCastling(selectedMove);
 						// repaint graphics
 				    	board.repaint();
 						
-				    	// pawn promotion?
-						char typeToMove = btb.getArraySquare(posOfPieceToMove);
-						if(Character.toUpperCase(typeToMove) == 'P' && 
-								(moveBits & MoveGenerator.rankMask[((playerTurn == 0) ? 0 : 7)]) != 0L)
-							moveGen.promotePawn(BitBoard.getPos(moveBits), playerTurn);
-						
-						// if moved piece is a king, negate both castling possibilities
-						if(Character.toUpperCase(typeToMove) == 'K') {
-							kSideCastling[playerTurn] = qSideCastling[playerTurn] = false;
-							int offset = (playerTurn == 0) ? 56 : 0;
-							// if king move was a castling, also move the corresponding rook
-							if(selectedMove.equals(new Move(4 + offset, 6 + offset)))
-								btb.movePiece(new Move(7 + offset, 5 + offset));
-							else if(selectedMove.equals(new Move(4 + offset, 2 + offset)))
-								btb.movePiece(new Move(0 + offset, 3 + offset));
-						}			
-						// if moved piece is a rook, negate corresponding side castling possibility
-						if(Character.toUpperCase(typeToMove) == 'R')
-							if(posOfPieceToMove == 0 || posOfPieceToMove == 56) // if left side of board
-								qSideCastling[playerTurn] = false;
-							else if(posOfPieceToMove == 7 || posOfPieceToMove == 63) // if right side of board
-								kSideCastling[playerTurn] = false;	
+			    		
+//				    	// pawn promotion?
+//						char typeToMove = btb.getArraySquare(posOfPieceToMove);
+//						if(Character.toUpperCase(typeToMove) == 'P' && 
+//								(moveBits & MoveGenerator.rankMask[((playerTurn == 0) ? 0 : 7)]) != 0L)
+//							moveGen.promotePawn(BitBoard.getPos(moveBits), playerTurn);
+//						
+//						// if moved piece is a king, negate both castling possibilities
+//						if(Character.toUpperCase(typeToMove) == 'K') {
+//							kSideCastling[playerTurn] = qSideCastling[playerTurn] = false;
+//							int offset = (playerTurn == 0) ? 56 : 0;
+//							// if king move was a castling, also move the corresponding rook
+//							if(selectedMove.equals(new Move(4 + offset, 6 + offset)))
+//								btb.movePiece(new Move(7 + offset, 5 + offset));
+//							else if(selectedMove.equals(new Move(4 + offset, 2 + offset)))
+//								btb.movePiece(new Move(0 + offset, 3 + offset));
+//						}			
+//						// if moved piece is a rook, negate corresponding side castling possibility
+//						if(Character.toUpperCase(typeToMove) == 'R')
+//							if(posOfPieceToMove == 0 || posOfPieceToMove == 56) // if left side of board
+//								qSideCastling[playerTurn] = false;
+//							else if(posOfPieceToMove == 7 || posOfPieceToMove == 63) // if right side of board
+//								kSideCastling[playerTurn] = false;	
 					}
 				    hasMoved = true;
 				} else {
@@ -154,7 +160,7 @@ public class Game implements Runnable, Vals {
 				Thread.sleep(200);
 			} catch (InterruptedException e) {}
 			setPlayerTurn(1-playerTurn);
-			Speak.say("\n====> Player turn: " + COLOUR_NAME[playerTurn], true);
+			board.setDebugText("Player turn: " + COLOUR_NAME[playerTurn]);
 		}		
 	}
 	
@@ -174,7 +180,7 @@ public class Game implements Runnable, Vals {
 
 	public void setActivePlayer(Player activePlayer) {
 		this.activePlayer = activePlayer;
-		Speak.say("active player changed to: " + this.activePlayer, true);
+		board.setDebugText("active player changed to: " + this.activePlayer);
 	}
 	
 	public void setPlayer(int pieceColor, Player playerHandler) {
@@ -214,6 +220,10 @@ public class Game implements Runnable, Vals {
 
 	public void setBitBoard(BitBoard bitBoard) {
 		this.btb = bitBoard;
+	}
+
+	public ChessBoardGui getBoard() {
+		return board;
 	}
 
 	@Override

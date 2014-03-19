@@ -11,6 +11,8 @@ import java.util.ArrayList;
 
 
 
+import java.util.List;
+
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -22,6 +24,7 @@ import game.BitBoard;
 import game.ChessGame;
 import game.Game;
 import game.Move;
+import game.Speak;
 import interfaces.Declarations;
 import interfaces.Vals;
 
@@ -29,11 +32,12 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	
 	private static final long serialVersionUID = 1L;
 	private Image imgBackground;
-	private JLabel lblGameState;
+	private JLabel lblGameState, debugTextLabel;
+	private String debugText = "";
 
 	private Game game;
-//	private List<PieceGui> guiPieces = new ArrayList<PieceGui>();
 	private PieceGui[] guiPieces = new PieceGui[64];
+	private List<PieceGui> capturedGuiPieces = new ArrayList<PieceGui>();
 	private PieceGui dragPiece;
 	private int piecesSize = 0;
 
@@ -74,10 +78,17 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		// label to display game state
 		String labelText = this.getGameStateAsText();
 		lblGameState = new JLabel(labelText);
-		lblGameState.setBounds(0, 30, 80, 30);
+		lblGameState.setBounds(10, 40, 250, 100);
 		lblGameState.setForeground(Color.WHITE);
 		// add JLabel to JPanel (this)
 		this.add(lblGameState);
+		
+		// label to display game state
+		debugTextLabel = new JLabel(debugText);
+		debugTextLabel.setBounds(20, 600, 600, 100);
+		debugTextLabel.setForeground(Color.YELLOW);
+		// add JLabel to JPanel (this)
+		this.add(debugTextLabel);
 
 		// create application frame and set visible
 		HeroesFrame f = new HeroesFrame();
@@ -92,8 +103,8 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		this.addMouseListener(listener);
 		this.addMouseMotionListener(listener);
 	}
-    
-    // initialize animation graphics data
+
+	// initialize animation graphics data
     private void initAnimationData() {
         BufferedImageLoader loader = new BufferedImageLoader();
         BufferedImage spriteSheet = null;
@@ -141,13 +152,13 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
     
     public void createGuiPieceArray() {
 		for(int pos = 0; pos < 64; pos++) {
-			if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_BLACK)) > 0L) {
+			if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_BLACK)) != 0L) {
 				createAndAddPieceGui(new Piece(COLOR_BLACK, game.getBitBoard().getArraySquare(pos), pos, pos));
-			} else if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_WHITE)) > 0L) {
+			} else if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_WHITE)) != 0L) {
 				createAndAddPieceGui(new Piece(COLOR_WHITE, game.getBitBoard().getArraySquare(pos), pos, pos));
 			} else
 				guiPieces[pos] = null;
-		}
+		}	
     }
     
 	// create and add a gui piece
@@ -174,6 +185,14 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		return state;
 	}
 	
+	public String getDebugText() {
+		return debugText;
+	}
+
+	public void setDebugText(String debugText) {
+		this.debugText = debugText;
+	}
+
 	public static int convertColumnToX(int column){
 		return PIECES_START_X + SQUARE_WIDTH * column;
 	}
@@ -211,7 +230,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		int w = -1, b = -1;
 		for (PieceGui guiPiece : guiPieces) {
 			if(guiPiece != null) {
-				if( !guiPiece.isCaptured()){
+				if( !guiPiece.isCaptured()) {
 					if(guiPiece.getAnim(guiPiece.getState()) != null) {
 						guiPiece.getAnim(guiPiece.getState()).update(System.currentTimeMillis());
 						g.drawImage(guiPiece.getImage(guiPiece.getState()), guiPiece.getX(), guiPiece.getY() - GUI_PIECE_SCALE,
@@ -245,7 +264,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		// draw valid target locations, if user is dragging a game piece
 		if(isUserDraggingPiece()) {
 			// does dragPiece have any moveBits set?
-			if(dragPiece.getMoveBits().getBits() > 0L) {
+			if(dragPiece.getMoveBits().getBits() != 0L) {
 				int[] movePositions = BitBoard.getMultiPos(dragPiece.getMoveBits().getBits());
 				drawGreenRects(g, movePositions);
 			}		
@@ -274,21 +293,24 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	
 	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
 		// if dragPiece hasn't moved outside of start square, snap back to start
-		if(draggedPiece.getPos() == targetPos)
-			draggedPiece.snapToNearestSquare();
-		else {
-			Move move = new Move(draggedPiece.getPos(), targetPos);
-			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
-				game.getActivePlayer().setCurrentMove(move);
-				lastMove = game.getActivePlayer().getLastMove();
-			} else {
-				// if target square wasn't part of valid moves, snap back to start
+		if(draggedPiece != null) {
+			if(draggedPiece.getPos() == targetPos)
 				draggedPiece.snapToNearestSquare();
+			else if(draggedPiece.getMoveBits() != null) {
+				Move move = new Move(draggedPiece.getPos(), targetPos);
+				if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
+					game.getActivePlayer().setCurrentMove(move);
+					lastMove = game.getActivePlayer().getLastMove();
+				} else {
+					// if target square wasn't part of valid moves, snap back to start
+					draggedPiece.snapToNearestSquare();
+				}
 			}
-		}
-		try {
-			Thread.sleep(100);
-		} catch (InterruptedException e) {}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {}
+		} else
+			return;
 	}
 
 	public Game getGame() {

@@ -45,7 +45,7 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		if(mouseOverPos > -1) {
 			PieceGui guiPieceInFocus = board.getGuiPiece(mouseOverPos);
 			if(guiPieceInFocus != null) {
-				Speak.say("dragPiece: " + guiPieceInFocus, true);
+//				Speak.say("dragPiece: " + guiPieceInFocus, true);
 				if(guiPieceInFocus.getColour() == board.getGame().getPlayerTurn()) {
 					// calculate offset, because we do not want the drag piece
 					// to jump with it's upper left corner to the current mouse position
@@ -57,8 +57,8 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		} 
 		// DEBUG: write array of all pieces in console
 		else {
-			for (int pos = 0; pos < 64; pos++)
-				Speak.say(pos + ": " + board.getGuiPiece(pos), true);
+//			for (int pos = 0; pos < 64; pos++)
+//				Speak.say(pos + ": " + board.getGuiPiece(pos), true);
 			board.getGame().getActivePlayer().setDebugging(true);
 		}
 	}
