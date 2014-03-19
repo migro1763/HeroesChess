@@ -11,7 +11,7 @@ public class PieceGui extends Piece implements Declarations {
 	// animation states
 	private int state = 0;
 	
-	private BufferedImage img;
+//	private BufferedImage img;
 	private ArrayList<Animator> anim;
 	private int x;
 	private int y;
@@ -85,6 +85,11 @@ public class PieceGui extends Piece implements Declarations {
 	public void snapToNearestSquare() {
 		x = ChessBoardGui.convertColumnToX(getColumn());
 		y = ChessBoardGui.convertRowToY(getRow());
+	}
+	
+	public void snapToNearestSquare(int pos) {
+		x = ChessBoardGui.convertColumnToX(pos%8);
+		y = ChessBoardGui.convertRowToY(pos/8);
 	}
 	
 	// unfinished!

@@ -88,7 +88,7 @@ public class MoveGenerator {
 	public long getHoriVertMoves(int colour, BitBoard testBB) {
 		long rookMoveBits = 0L;
 		long rooksBB = testBB.getBB((colour == 0) ? 'R' : 'r').getBits();
-		int[] rookPos = testBB.getMultiPos(rooksBB);
+		int[] rookPos = BitBoard.getMultiPos(rooksBB);
 		for (int i = 0; i < rookPos.length; i++)
 			rookMoveBits |= getHoriVertMoves(rookPos[i], colour, testBB);
 		return rookMoveBits;
@@ -112,7 +112,7 @@ public class MoveGenerator {
 	public long getDiagAntiDiagMoves(int colour, BitBoard testBB) {
 		long bishopMoveBits = 0L;
 		long bishopsBB = testBB.getBB((colour == 0) ? 'B' : 'b').getBits();
-		int[] bishopPos = testBB.getMultiPos(bishopsBB);
+		int[] bishopPos = BitBoard.getMultiPos(bishopsBB);
 		for (int i = 0; i < bishopPos.length; i++)
 			bishopMoveBits |= getDiagAntiDiagMoves(bishopPos[i], colour, testBB);
 		return bishopMoveBits;
@@ -132,7 +132,7 @@ public class MoveGenerator {
 	public long getKnightMoves(int colour, BitBoard testBB) {
 		long knightMoveBits = 0L;
 		long knightsBits = testBB.getBB((colour == 0) ? 'N' : 'n').getBits();
-		int[] knightPos = testBB.getMultiPos(knightsBits);
+		int[] knightPos = BitBoard.getMultiPos(knightsBits);
 		for (int i = 0; i < knightPos.length; i++)
 			knightMoveBits |= getKnightMoves(knightPos[i], colour);
 		return knightMoveBits;
@@ -188,7 +188,7 @@ public class MoveGenerator {
 	
 	// queen
 	public long getQueenMoves(int colour, BitBoard testBB) {
-		int queenPos = testBB.getPos(testBB.getBB((colour == 0) ? 'Q' : 'q'));
+		int queenPos = BitBoard.getPos(testBB.getBB((colour == 0) ? 'Q' : 'q'));
 		long moveBits = getHoriVertMoves(queenPos, colour, testBB);
 		moveBits |= getDiagAntiDiagMoves(queenPos, colour, testBB); 
 		return moveBits; 
@@ -205,8 +205,8 @@ public class MoveGenerator {
 		String cMoves = getCastling(colour);
 		if(!cMoves.isEmpty())
 			for(int i = 0; i < cMoves.length(); i+=4)
-				andBits |= 1L<<gameBB.getPosFromCoords(gameBB.getPosFromMove(cMoves.substring(i, i+4), 2),
-						gameBB.getPosFromMove(cMoves.substring(i, i+4), 3));
+				andBits |= 1L<<BitBoard.getPosFromCoords(BitBoard.getPosFromMove(cMoves.substring(i, i+4), 2),
+						BitBoard.getPosFromMove(cMoves.substring(i, i+4), 3));
 		return getKingSafe(colour, andBits);
 	}
 	
@@ -285,7 +285,7 @@ public class MoveGenerator {
 		BB pawnBB = gameBB.getBB((colour == 0) ? 'P' : 'p'); // pawn to promote
 		char knight = (colour == 0) ? 'N' : 'n'; // promotion choice 0
 		char queen = (colour == 0) ? 'Q' : 'q'; // promotion choice 1
-		String[] choices = {gameBB.getLongName(knight), gameBB.getLongName(queen)};
+		String[] choices = {BitBoard.getLongName(knight), BitBoard.getLongName(queen)};
 		int promotionType = Speak.ask("What do you wish the pawn to be promoted to?", choices);
 		switch(promotionType) {
 			case 0: // if choosing knight
@@ -307,7 +307,8 @@ public class MoveGenerator {
 
 	// get possible moves for current player's piece at position start
 	public BB possibleMoves(int colour, int start, Move history) {	
-		long moveBits = 0L;	
+		long moveBits = 0L;
+		start = verifyPosition(start);
 		char pieceType = gameBB.getArraySquare(start);
 		// test if trying to move piece of wrong colour
 		if((Character.isLowerCase(pieceType)&&colour==0) || (Character.isUpperCase(pieceType)&&colour==1)) {
@@ -340,6 +341,12 @@ public class MoveGenerator {
 		return new BB(moveBits, colour);
 	}
 	
+	private int verifyPosition(int start) {
+		int pos = (start < 0) ? 0 : start;
+		pos = (pos > 63) ? 63 : pos;
+		return pos;
+	}
+
 	public static Move makeMove(long moveBits, int start) {
     	Move move = null;
 	    for (int pos=Long.numberOfTrailingZeros(moveBits); pos<64-Long.numberOfLeadingZeros(moveBits); pos++)

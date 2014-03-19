@@ -22,7 +22,6 @@ import game.BitBoard;
 import game.ChessGame;
 import game.Game;
 import game.Move;
-import game.Speak;
 import interfaces.Declarations;
 import interfaces.Vals;
 
@@ -42,10 +41,10 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	private double getScaleAdd;
 	
 	// from Heroes class
-	private BufferedImage sprite;
+//	private BufferedImage sprite;
 	private SpriteSheet ss;
-	private Image dbImage;
-	private Graphics dbg;
+//	private Image dbImage;
+//	private Graphics dbg;
 	private Reader reader = new Reader();
 	private ArrayList<Unit> data;
     public double scale = 1.0;
@@ -70,16 +69,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		initAnimationData();
 		
 		// set up 64-size array of gui pieces
-		for(int pos = 0; pos < 64; pos++) {
-			if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_BLACK)) > 0L) {
-				createAndAddPieceGui(new Piece(COLOR_BLACK, game.getBitBoard().getArraySquare(pos), pos, pos));
-//				Speak.say("Pos: " + pos + " => added: " + guiPieces[pos], true);
-			} else if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_WHITE)) > 0L) {
-				createAndAddPieceGui(new Piece(COLOR_WHITE, game.getBitBoard().getArraySquare(pos), pos, pos));
-//				Speak.say("Pos: " + pos + " => added: " + guiPieces[pos], true);
-			} else
-				guiPieces[pos] = null;
-		}
+		createGuiPieceArray();
 	
 		// label to display game state
 		String labelText = this.getGameStateAsText();
@@ -109,9 +99,9 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
         BufferedImage spriteSheet = null;
 		// load all units as array list of Unit objects
 		try {
-			data = reader.readData(IMG_PATH_GITHUB + "/heroesFrames_sheet.txt");
+			data = reader.readData(IMG_PATH_GITHUB + "/heroesFrames_sheet2.txt");
 		} catch (IOException e) {}
-        spriteSheet = loader.loadImage("file:" + IMG_PATH_GITHUB + "/heroesFrames_sheet.png");
+        spriteSheet = loader.loadImage("file:" + IMG_PATH_GITHUB + "/heroesFrames_sheet2.png");
 
         ss = new SpriteSheet(spriteSheet);     
     }
@@ -149,27 +139,37 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		return null;
     }
     
+    public void createGuiPieceArray() {
+		for(int pos = 0; pos < 64; pos++) {
+			if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_BLACK)) > 0L) {
+				createAndAddPieceGui(new Piece(COLOR_BLACK, game.getBitBoard().getArraySquare(pos), pos, pos));
+			} else if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_WHITE)) > 0L) {
+				createAndAddPieceGui(new Piece(COLOR_WHITE, game.getBitBoard().getArraySquare(pos), pos, pos));
+			} else
+				guiPieces[pos] = null;
+		}
+    }
+    
 	// create and add a gui piece
 	private void createAndAddPieceGui(Piece piece) {		
 		PieceGui guiPiece = new PieceGui(piece, getAnimStates(piece));
 		// start animation on the guiPiece
 		guiPiece.getAnim(guiPiece.getState()).setSpeed(200);
 		guiPiece.getAnim(guiPiece.getState()).play();
-		// add guiPiece to list
-//		guiPieces.add(guiPiece);
+		// add guiPiece to array
 		guiPieces[guiPiece.getPos()] = guiPiece;
 	}
 	
 	private String getGameStateAsText() {
 		String state = "unknown";
-		switch (this.game.getPlayerTurn()) {
+		switch (game.getPlayerTurn()) {
 			case ChessGame.GAME_STATE_BLACK: state = "black";break;
 			case ChessGame.GAME_STATE_END_WHITE_WON: state = "white won";break;
 			case ChessGame.GAME_STATE_END_BLACK_WON: state = "black won";break;
 			case ChessGame.GAME_STATE_WHITE: state = "white";break;
 		}
-//		if(this.isCheck())
-//			state = "in check!";
+		if(game.getActivePlayer() != null && game.getActivePlayer().isCheck())
+			state += " in check!";
 		
 		return state;
 	}
@@ -247,14 +247,13 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			// does dragPiece have any moveBits set?
 			if(dragPiece.getMoveBits().getBits() > 0L) {
 				int[] movePositions = BitBoard.getMultiPos(dragPiece.getMoveBits().getBits());
-				for (int pos : movePositions) {
-					int greenRectX = convertColumnToX(pos%8);
-					int greenRectY = convertRowToY(pos/8);
-					// draw the highlight
-					g.setColor(Color.GREEN);
-					g.drawRoundRect( greenRectX, greenRectY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
-				}
+				drawGreenRects(g, movePositions);
 			}		
+		}
+		
+		if(game.getActivePlayer().isDebugging()) {
+			int[] piecePositions = BitBoard.getMultiPos(game.getBitBoard().getColourPieces(game.getPlayerTurn()));
+			drawGreenRects(g, piecePositions);
 		}
 		
 		// draw game state label
@@ -263,16 +262,33 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		repaint();
 	}
 	
-	 // change location of given piece, if the location is valid.
-	 // If the location is not valid, move the piece back to its original
-	 // position.
+	public void drawGreenRects(Graphics gr, int[] movePositions) {
+		for (int pos : movePositions) {
+			int greenRectX = convertColumnToX(pos%8);
+			int greenRectY = convertRowToY(pos/8);
+			// draw the highlight
+			gr.setColor(Color.GREEN);
+			gr.drawRoundRect( greenRectX, greenRectY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
+		}		
+	}
+	
 	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
-		Move move = new Move(draggedPiece.getPos(), targetPos);
-		if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
-			game.getActivePlayer().setCurrentMove(move);
-		} else {
+		// if dragPiece hasn't moved outside of start square, snap back to start
+		if(draggedPiece.getPos() == targetPos)
 			draggedPiece.snapToNearestSquare();
+		else {
+			Move move = new Move(draggedPiece.getPos(), targetPos);
+			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
+				game.getActivePlayer().setCurrentMove(move);
+				lastMove = game.getActivePlayer().getLastMove();
+			} else {
+				// if target square wasn't part of valid moves, snap back to start
+				draggedPiece.snapToNearestSquare();
+			}
 		}
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e) {}
 	}
 
 	public Game getGame() {
@@ -281,6 +297,10 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	
 	public PieceGui getGuiPiece(int pos) {
 		return guiPieces[pos];
+	}
+	
+	public void setGuiPiece(int pos, PieceGui guiPiece) {
+		guiPieces[pos] = guiPiece;
 	}
 
 	public PieceGui[] getGuiPieces() {

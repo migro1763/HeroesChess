@@ -139,7 +139,7 @@ public class BitBoard {
     }
     
     public char getArraySquare(int position) {
-    	if(position>=0 && position<64) {
+    	if(position >= 0 && position < 64) {
 	    	if (BigInteger.valueOf(wp.getBits()).testBit(position)) return 'P';
 	    	if (BigInteger.valueOf(wn.getBits()).testBit(position)) return 'N';
 	    	if (BigInteger.valueOf(wb.getBits()).testBit(position)) return 'B';
@@ -158,7 +158,7 @@ public class BitBoard {
     
     // *** OBSOLETE METHODS! ***
     // coord 0 = x1, 1 = y1, 2 = x2, 3 = y2
-    public int getPosFromMove(String move, int coord) {
+    public static int getPosFromMove(String move, int coord) {
     	switch(coord) {
 	    	case 0: return Integer.parseInt(move.substring(0,1));
 	    	case 1: return Integer.parseInt(move.substring(1,2));
@@ -190,11 +190,9 @@ public class BitBoard {
 		BB bitboard;
         char type = getArraySquare(move.getSrc());
         char oppType = getArraySquare(move.getTrg());
-        if(oppType != ' ') {
+        // if target square is not empty
+        if(oppType != ' ')
         	setBB(oppType, move.getTrg(), 0); // setting piece on target square's bitboard to 0 at target pos
-        	// PS: setBB has a debug-print of bitboard of remaining opponents type
-        } else
-        	Speak.say("", true);
         switch (type) {
 	        case 'P':	bitboard = wp;
 	            break;

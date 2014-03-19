@@ -16,7 +16,7 @@ import players.Player;
 
 public class HeroesChess implements Vals {
 
-	private static final int PLAYER_OPTION_SWING = 0;
+	private static final int PLAYER_OPTION_HUMAN = 0;
 	private static final int PLAYER_OPTION_AI = 1;
 	private static final int PLAYER_OPTION_NETWORK = 2;
 
@@ -48,19 +48,18 @@ public class HeroesChess implements Vals {
 		Game game = new Game();
 
 		// assign white and black player
-//		Player playerWhite = getPlayerHandler(whitePlayerOption, game, gameIdOnServer, gamePassword);
-		Player playerWhite = getPlayerHandler(0, game, gameIdOnServer, gamePassword);
-		Player playerBlack = null;
+		Player playerWhite = getPlayerHandler(whitePlayerOption, game, gameIdOnServer, gamePassword, "White player");
+		Player playerBlack = getPlayerHandler(blackPlayerOption, game, gameIdOnServer, gamePassword, "Black player");
 		
 		// if white and black are the same (e.g. both Swing or both Console)
 		// then do not create a new player instance, but reuse the already
 		// created ones. Otherwise we would create two Swing frames or
 		// mess up the console interface, etc.
-		if (whitePlayerOption == blackPlayerOption) {
-			playerBlack = playerWhite;
-		} else {
-			playerBlack = getPlayerHandler(blackPlayerOption, game, gameIdOnServer, gamePassword);			
-		}
+//		if (whitePlayerOption == blackPlayerOption) {
+//			playerBlack = playerWhite;
+//		} else {
+//			playerBlack = getPlayerHandler(blackPlayerOption, game, gameIdOnServer, gamePassword, "Black player");			
+//		}
 
 		// then we attach the clients/players to the game
 		game.setPlayer(0, playerWhite);
@@ -71,11 +70,11 @@ public class HeroesChess implements Vals {
 	}
 	
 	private static Player getPlayerHandler(int playerHandlerOption,
-			Game game, String gameIdOnServer, String gamePassword) throws IOException {
+			Game game, String gameIdOnServer, String gamePassword, String name) throws IOException {
 		switch (playerHandlerOption) {
 			case PLAYER_OPTION_AI: return new Computer();
 			//case PLAYER_OPTION_NETWORK: return new XmlRpcPlayerHandler(gameIdOnServer,gamePassword);
-			case PLAYER_OPTION_SWING: return new Human();
+			case PLAYER_OPTION_HUMAN: return new Human(name);
 			default: throw new IllegalArgumentException("Invalid player option:" + playerHandlerOption);
 		}
 	}

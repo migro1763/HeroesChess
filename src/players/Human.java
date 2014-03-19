@@ -4,13 +4,19 @@ import game.Move;
 
 public class Human extends Player {
 	
-	public Human() {
+	private String name;
+	
+	public Human(String name) {
+		this.name = name;
 		dragPiecesEnabled = true;
+	}
+	
+	public Human() {
+		this("");
 	}
 	
 	@Override
 	public Move getMove() {
-		setDragPiecesEnabled(true);
 		Move moveForExecution = currentMove;
 		currentMove = null;
 		return moveForExecution;
@@ -22,7 +28,10 @@ public class Human extends Player {
 		setLastMove(move);
 		// disable dragging until asked by ChessGame for the next move
 		setDragPiecesEnabled(false);
-
-		// repaint the new state
+	}
+	
+	@Override
+	public String toString() {
+		return name + ", is in check: " + isCheck;
 	}
 }
