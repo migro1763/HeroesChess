@@ -2,6 +2,7 @@ package gui;
 
 import interfaces.Declarations;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.FileInputStream;
 import java.util.Properties;
@@ -27,7 +28,8 @@ public class Reader implements Declarations {
 
 		//get properties file
 		Properties prop = new Properties();
-		prop.load(new FileInputStream(path));
+		File file = new File(path);
+		prop.load(new FileInputStream(file));
 
 		ArrayList<Unit> sprites = new ArrayList<Unit>();
 		ArrayList<String> propUnits = new ArrayList<String>(prop.stringPropertyNames());

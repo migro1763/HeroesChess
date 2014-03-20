@@ -51,14 +51,14 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 					// to jump with it's upper left corner to the current mouse position
 					dragOffsetX = x - guiPieceInFocus.getX();
 					dragOffsetY = y - guiPieceInFocus.getY();
+//					guiPieceInFocus.setState(STATE_WALK);
+//					guiPieceInFocus.getAnim(STATE_WALK).setIdlePause(0);
 					board.setDragPiece(guiPieceInFocus);
 				}
 			}
 		} 
-		// DEBUG: write array of all pieces in console
+		// DEBUG: green rects on every pieces bits for active player colour
 		else {
-//			for (int pos = 0; pos < 64; pos++)
-//				Speak.say(pos + ": " + board.getGuiPiece(pos), true);
 			board.getGame().getActivePlayer().setDebugging(true);
 		}
 	}
@@ -67,9 +67,9 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		int pos = -1;
 		if(x > BOARD_START_X && x < (BOARD_START_X + BOARD_WIDTH) &&
 				y > BOARD_START_Y && y < (BOARD_START_Y + BOARD_HEIGHT)) {
-			int row = ((x - BOARD_START_X) / SQUARE_WIDTH);
-			int column = ((y - BOARD_START_Y) / SQUARE_HEIGHT);
-			pos = BitBoard.getPosFromCoords(column, row);
+			int column = ChessBoardGui.convertXToColumn(x);
+			int row = ChessBoardGui.convertYToRow(y);
+			pos = ChessBoardGui.getPosFromCoords(column, row);
 		}
 		return pos;
 	}
@@ -83,7 +83,10 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 			int y = evt.getPoint().y - dragOffsetY;
 			
 			// set game piece to the new location if possible
-			board.setNewPieceLocation(board.getDragPiece(), getMouseOverPos(x, y));
+			PieceGui dragPiece = board.getDragPiece();
+			board.setNewPieceLocation(dragPiece, getMouseOverPos(x, y));
+//			dragPiece.setState(STATE_IDLE);
+//			board.getDragPiece().getAnim(STATE_IDLE).resetIdlePause();
 			board.repaint();
 			board.setDragPiece(null);
 		}

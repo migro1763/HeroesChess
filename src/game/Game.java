@@ -79,6 +79,7 @@ public class Game implements Runnable, Vals {
 			activePlayer.setCheck(moveGen.isInCheck(playerTurn));
 			
 			posOfPieceToMove = dragPiece.getPos();
+			board.setDebugText("posOfPieceToMove" + posOfPieceToMove);
 			dragPieceMoveBits = moveGen.possibleMoves(playerTurn, posOfPieceToMove, history);
 			dragPiece.setMoveBits(dragPieceMoveBits);
 			
@@ -99,9 +100,9 @@ public class Game implements Runnable, Vals {
 				
 				if((dragPieceMoveBits.getBits() & moveBits) != 0L) {			
 					// if move is (still) causing a check
-				    if(moveGen.testCheck(playerTurn, moveBits))
-				    	return false;    
-				    else {
+//				    if(moveGen.testCheck(playerTurn, moveBits))
+//				    	return false;    
+//				    else {
 				    	selectedMove = activePlayer.getMove();
 				    	// move the selected piece by selected move
 			    		btb.movePiece(selectedMove);
@@ -142,7 +143,7 @@ public class Game implements Runnable, Vals {
 //								qSideCastling[playerTurn] = false;
 //							else if(posOfPieceToMove == 7 || posOfPieceToMove == 63) // if right side of board
 //								kSideCastling[playerTurn] = false;	
-					}
+//					}
 				    hasMoved = true;
 				} else {
 					// -1 indicates no move was done, possibly due to wrong square selected or

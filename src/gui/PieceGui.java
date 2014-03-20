@@ -9,7 +9,7 @@ import pieces.Piece;
 public class PieceGui extends Piece implements Declarations {
 	
 	// animation states
-	private int state = 0;
+	private int state = STATE_IDLE;
 	
 //	private BufferedImage img;
 	private ArrayList<Animator> anim;

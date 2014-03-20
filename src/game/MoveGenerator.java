@@ -1,5 +1,6 @@
 package game;
 
+import gui.ChessBoardGui;
 import gui.PieceGui;
 import interfaces.Vals;
 
@@ -217,7 +218,7 @@ public class MoveGenerator implements Vals {
 		String cMoves = getCastling(colour);
 		if(!cMoves.isEmpty())
 			for(int i = 0; i < cMoves.length(); i+=4)
-				andBits |= 1L<<BitBoard.getPosFromCoords(BitBoard.getPosFromMove(cMoves.substring(i, i+4), 2),
+				andBits |= 1L<<ChessBoardGui.getPosFromCoords(BitBoard.getPosFromMove(cMoves.substring(i, i+4), 2),
 						BitBoard.getPosFromMove(cMoves.substring(i, i+4), 3));
 		return getKingSafe(colour, andBits);
 	}
@@ -253,7 +254,7 @@ public class MoveGenerator implements Vals {
 	}
 	
 	public boolean isInCheck(int colour, BitBoard testBB) {
-		if(pieceTypeChecking(colour, testBB) > 0) return true;
+		if(pieceTypeChecking(colour, testBB) != 0L) return true;
 		else return false;
 	}
 	
@@ -401,8 +402,8 @@ public class MoveGenerator implements Vals {
 			game.getBoard().setDebugText(pieceType + " cannot move!");
 			
 		// routine for testing if possible moves can resolve king in check	
-		} else if(game.getActivePlayer().isCheck()) { // if king is in check
-			if(testCheck(colour, moveBits)) return null;
+//		} else if(game.getActivePlayer().isCheck()) { // if king is in check
+//			if(testCheck(colour, moveBits)) return null;
 		}
 		return new BB(moveBits, colour);
 	}

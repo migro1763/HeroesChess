@@ -177,9 +177,6 @@ public class BitBoard {
     	}
     }
     
-    public static int getPosFromCoords(int x, int y) {
-    	return y + (x * 8);
-    }
     // *** OBSOLETE METHODS END ***
     
     public static String getLongName(char type) {

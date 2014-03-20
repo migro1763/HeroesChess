@@ -62,8 +62,10 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		// background
 		try {
 			this.imgBackground = new ImageIcon(ImageIO.read(
-					new File(IMG_PATH_GITHUB + "/battleBG1024x730_topL218x123_sq74.png"))).getImage();
-		} catch (IOException exc) {}
+					new File("./img/battleBG1024x730_topL218x123_sq74.png"))).getImage();
+		} catch (IOException exc) {
+			System.out.println("image background path illegal!");
+		}
 		
 		// create chess game
 		this.game = game;
@@ -78,14 +80,14 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		// label to display game state
 		String labelText = this.getGameStateAsText();
 		lblGameState = new JLabel(labelText);
-		lblGameState.setBounds(10, 40, 250, 100);
+		lblGameState.setBounds(10, BOARD_HEIGHT>>1, 250, 100);
 		lblGameState.setForeground(Color.WHITE);
 		// add JLabel to JPanel (this)
 		this.add(lblGameState);
 		
-		// label to display game state
+		// label to display debug text, via setDebugText(String text)
 		debugTextLabel = new JLabel(debugText);
-		debugTextLabel.setBounds(20, 600, 600, 100);
+		debugTextLabel.setBounds(10, 10, 400, 80);
 		debugTextLabel.setForeground(Color.YELLOW);
 		// add JLabel to JPanel (this)
 		this.add(debugTextLabel);
@@ -110,10 +112,13 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
         BufferedImage spriteSheet = null;
 		// load all units as array list of Unit objects
 		try {
-			data = reader.readData(IMG_PATH_GITHUB + "/heroesFrames_sheet2.txt");
-		} catch (IOException e) {}
-        spriteSheet = loader.loadImage("file:" + IMG_PATH_GITHUB + "/heroesFrames_sheet2.png");
-
+//			data = reader.readData(IMG_PATH_GITHUB + "/heroesFrames_sheet2.txt");
+			data = reader.readData("./img/heroesFrames_sheet2.txt");
+		} catch (IOException e) {
+			System.out.println("spritesheet text path illegal!");
+		}
+        
+		spriteSheet = loader.loadImage("file:./img/heroesFrames_sheet2.png");
         ss = new SpriteSheet(spriteSheet);     
     }
     
@@ -122,7 +127,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
         ArrayList<Animator> animSprites = new ArrayList<Animator>();
 		for (int i = 0; i < 4; i++) {
 			Animator tmpAnim = new Animator(getSprites(ss, piece.getUnitNbr(), i));
-			tmpAnim.setUnit(findUnit(piece.getUnitNbr(), PieceGui.STATE_IDLE));
+			tmpAnim.setUnit(findUnit(piece.getUnitNbr(), i));
 			animSprites.add(tmpAnim);	
 		}	
 		return animSprites;
@@ -206,8 +211,12 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	}
 
 	public static int convertYToRow(int y){
-		return ROW_8 - (y - DRAG_TARGET_SQUARE_START_Y)/SQUARE_HEIGHT;
+		return (y - DRAG_TARGET_SQUARE_START_Y)/SQUARE_HEIGHT;
 	}
+	
+    public static int getPosFromCoords(int column, int row) {
+    	return column + (row * 8);
+    }
 	
 	public void setDragPiece(PieceGui guiPiece) {
 		this.dragPiece = guiPiece;
@@ -267,7 +276,11 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			if(dragPiece.getMoveBits().getBits() != 0L) {
 				int[] movePositions = BitBoard.getMultiPos(dragPiece.getMoveBits().getBits());
 				drawGreenRects(g, movePositions);
-			}		
+			}
+			// draw cyan rectangle on square where dragPiece is currently
+			int column = convertXToColumn(dragPiece.getX());
+			int row = convertYToRow(dragPiece.getY());
+			drawRect(g, getPosFromCoords(column, row), Color.CYAN);
 		}
 		
 		if(game.getActivePlayer().isDebugging()) {
@@ -277,18 +290,22 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		
 		// draw game state label
 		lblGameState.setText(getGameStateAsText());
-		
+		debugTextLabel.setText(getDebugText());
 		repaint();
 	}
 	
 	public void drawGreenRects(Graphics gr, int[] movePositions) {
 		for (int pos : movePositions) {
-			int greenRectX = convertColumnToX(pos%8);
-			int greenRectY = convertRowToY(pos/8);
-			// draw the highlight
-			gr.setColor(Color.GREEN);
-			gr.drawRoundRect( greenRectX, greenRectY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
+			drawRect(gr, pos, Color.GREEN);
 		}		
+	}
+	
+	public void drawRect(Graphics gr, int pos, Color colour) {
+		int rectX = convertColumnToX(pos%8);
+		int rectY = convertRowToY(pos/8);
+		// draw the rectangle
+		gr.setColor(colour);
+		gr.drawRoundRect( rectX, rectY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);		
 	}
 	
 	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {

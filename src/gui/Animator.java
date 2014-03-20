@@ -15,14 +15,15 @@ public class Animator {
     private volatile boolean idle = false;
 
     private long previousTime, speed, variance;
-	private long idlePause, previousIdleTime; // time in millis to pause between idle anims
+	private long idlePause, idlePauseDuration, previousIdleTime; // time in millis to pause between idle anims
     private int frameAtPause, currentFrame;
 
     public Animator(ArrayList<BufferedImage> frames){
         this.frames = frames;
-        this.unit = null;
-        this.variance = new Random().nextInt(10);
-		this.idlePause = (new Random().nextInt(20) + 10) * 500;
+        unit = null;
+        variance = new Random().nextInt(10);
+		idlePauseDuration = (new Random().nextInt(20) + 10) * 500;
+		idlePause = idlePauseDuration;
     }
 
     public void setSpeed(long speed){
@@ -79,6 +80,10 @@ public class Animator {
 
 	public void setIdlePause(long idlePause) {
 		this.idlePause = idlePause;
+	}
+	
+	public void resetIdlePause() {
+		idlePause = idlePauseDuration;
 	}
 
     public void play() {
