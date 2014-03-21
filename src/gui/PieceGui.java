@@ -28,6 +28,14 @@ public class PieceGui extends Piece implements Declarations {
 		snapToNearestSquare();
 	}
 	
+	// clone constructor
+	public PieceGui(PieceGui clone) {
+		super(clone.colour, clone.type, clone.pos, clone.id);
+		this.anim = clone.anim;
+		this.state = clone.state;
+		snapToNearestSquare();
+	}
+	
 	public BufferedImage getImage(int state) {
 		return anim.get(state).sprite;
 	}
@@ -52,6 +60,12 @@ public class PieceGui extends Piece implements Declarations {
 	public void setY(int y) {
 		prevY = this.y;
 		this.y = y;
+	}
+	
+	@Override
+	public void setPos(int pos) {
+		this.pos = pos;
+		snapToNearestSquare();
 	}
 
 	public int getPrevX() {

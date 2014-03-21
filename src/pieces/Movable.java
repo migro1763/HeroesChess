@@ -19,11 +19,11 @@ public abstract class Movable {
 	}
 
 	public int getRow() {
-		return pos/8;
+		return (pos/8);
 	}
 	
 	public int getColumn() {
-		return pos%8;
+		return (pos%8);
 	}
 	
 	public int getPos() {

@@ -196,9 +196,13 @@ public class BitBoard {
 		BB bitboard;
         char type = getArraySquare(move.getSrc());
         char oppType = getArraySquare(move.getTrg());
-        // if target square is not empty
-        if(oppType != ' ')
-        	setBB(oppType, move.getTrg(), 0); // setting piece on target square's bitboard to 0 at target pos
+        
+        // if target square is not empty = attack!
+        if(oppType != ' ') {
+        	// setting piece on target square's bitboard to 0 at target pos
+        	game.getBoard().addToCapturedGuiPieces(game.getBoard().getGuiPiece(move.getTrg()));
+        	setBB(oppType, move.getTrg(), 0);
+        }
         switch (type) {
 	        case 'P':	bitboard = wp;
 	            break;

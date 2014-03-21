@@ -364,7 +364,7 @@ public class MoveGenerator implements Vals {
 				break;		
 		}
 		// recreate and reposition all gui pieces
-		game.getBoard().createGuiPieceArray();
+		game.getBoard().setupGuiPieceArray();
 	}
 	
 	public void updateBBStates() {

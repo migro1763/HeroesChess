@@ -43,23 +43,23 @@ public class Piece extends Movable {
 	public int getUnitNbr() {
 		switch(Character.toLowerCase(getType())) {
 		case 'r':
-			return (colour == 0) ? 5 : 11;
+			return (colour == 0) ? 5 : 11; // titan/black dragon
 		case 'n':
-			return (colour == 0) ? 1 : 7;
+			return (colour == 0) ? 1 : 7; // champion/death knight
 		case 'b':
-			return (colour == 0) ? 2 : 8;
+			return (colour == 0) ? 2 : 8; // druid/power lich
 		case 'q':
-			return (colour == 0) ? 3 : 9;
+			return (colour == 0) ? 3 : 9; // naga queen/medusa
 		case 'k':
-			return (colour == 0) ? 0 : 6;
+			return (colour == 0) ? 0 : 6; // arch angel/arch devil
 		case 'p':
-			return (colour == 0) ? 4 : 10;		
+			return (colour == 0) ? 4 : 10; // peasant/skeleton		
 		}
 		return -1;
 	}
 	
 	@Override
 	public String toString() {
-		return Game.getLongName(type) + " at " + Game.makeStdPos(pos);
+		return Game.getLongName(type, colour) + " at " + Game.makeStdPos(pos);
 	}
 }

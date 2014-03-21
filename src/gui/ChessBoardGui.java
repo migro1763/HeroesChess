@@ -11,6 +11,7 @@ import java.util.ArrayList;
 
 
 
+import java.util.HashMap;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -36,6 +37,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	private String debugText = "";
 
 	private Game game;
+	private HashMap<String, PieceGui> pieceGuisBuffer = new HashMap<String, PieceGui>();
 	private PieceGui[] guiPieces = new PieceGui[64];
 	private List<PieceGui> capturedGuiPieces = new ArrayList<PieceGui>();
 	private PieceGui dragPiece;
@@ -57,9 +59,10 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
     public int whichState = 0;
     
     public ChessBoardGui(Game game) {
-		this.setLayout(null);
-
-		// background
+		
+    	this.setLayout(null);
+		
+    	// load background image
 		try {
 			this.imgBackground = new ImageIcon(ImageIO.read(
 					new File("./img/battleBG1024x730_topL218x123_sq74.png"))).getImage();
@@ -67,15 +70,20 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			System.out.println("image background path illegal!");
 		}
 		
-		// create chess game
+		// set game object as the created chess game parameter
 		this.game = game;
 		
+		// factor to scale gui pieces to fit board graphics
 		getScaleAdd = ((double)GUI_PIECE_SCALE / 12.0) - 1.0;
 
+		// load animation graphics and text file of all sprites
 		initAnimationData();
 		
-		// set up 64-size array of gui pieces
-		createGuiPieceArray();
+		// load piece gui graphics into hashmap buffer
+		loadPieceGuisIntoBuffer();
+		
+		// setup 64-size array of gui pieces, one for each board square
+		setupGuiPieceArray();
 	
 		// label to display game state
 		String labelText = this.getGameStateAsText();
@@ -99,7 +107,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		f.add(this);
 		f.setSize(imgBackground.getWidth(null) + 0, imgBackground.getHeight(null) + 0);
 		
-		// add listeners to enable drag and drop
+		// add listeners to enable drag and drop pieces
 		PiecesDragAndDropListener listener = new PiecesDragAndDropListener(this, f);
 		// add listeners to JPanel (this)
 		this.addMouseListener(listener);
@@ -112,7 +120,6 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
         BufferedImage spriteSheet = null;
 		// load all units as array list of Unit objects
 		try {
-//			data = reader.readData(IMG_PATH_GITHUB + "/heroesFrames_sheet2.txt");
 			data = reader.readData("./img/heroesFrames_sheet2.txt");
 		} catch (IOException e) {
 			System.out.println("spritesheet text path illegal!");
@@ -153,28 +160,51 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			}
 		}
 		return null;
-    }
+    }   
     
-    public void createGuiPieceArray() {
+	// retrieve and store all piece guis into hashmap, using keys with
+	// naming convention in lower case: "<colour> <type>". Ex. "white knight"
+	private void loadPieceGuisIntoBuffer() {
+		int[] colours = {COLOR_WHITE, COLOR_BLACK};
+ 		for (int colour : colours) {
+			for (int pGui = 0; pGui < 6; pGui++) {
+				Piece piece = new Piece(colour, PIECE_NAME[pGui].charAt(0), 0, 0);
+				PieceGui guiPiece = new PieceGui(piece, getAnimStates(piece));
+				guiPiece.getAnim(guiPiece.getState()).setSpeed(200);
+				guiPiece.getAnim(guiPiece.getState()).play();
+				pieceGuisBuffer.put(Game.getLongName(PIECE_NAME[pGui].charAt(0), colour), guiPiece);
+			}
+		}
+	}
+	
+	public PieceGui getPieceGuiFromBuffer(String key) {
+		return pieceGuisBuffer.get(key);
+	}
+    
+    public void setupGuiPieceArray() {
+    	PieceGui guiPiece = null;
+    	int colour;
 		for(int pos = 0; pos < 64; pos++) {
+			colour = -1;
 			if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_BLACK)) != 0L) {
-				createAndAddPieceGui(new Piece(COLOR_BLACK, game.getBitBoard().getArraySquare(pos), pos, pos));
+				colour = COLOR_BLACK;
 			} else if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_WHITE)) != 0L) {
-				createAndAddPieceGui(new Piece(COLOR_WHITE, game.getBitBoard().getArraySquare(pos), pos, pos));
+				colour = COLOR_WHITE;
 			} else
-				guiPieces[pos] = null;
+				// null when square is empty
+				guiPiece = null;
+			
+			if(colour >= 0) {
+				// load guiPiece from PieceGui buffer
+				guiPiece = new PieceGui(pieceGuisBuffer.get(Game.getLongName(
+						game.getBitBoard().getArraySquare(pos), colour)));
+				// set square position
+				guiPiece.setPos(pos);
+				guiPiece.setId(pos);
+			}
+			guiPieces[pos] = guiPiece;
 		}	
     }
-    
-	// create and add a gui piece
-	private void createAndAddPieceGui(Piece piece) {		
-		PieceGui guiPiece = new PieceGui(piece, getAnimStates(piece));
-		// start animation on the guiPiece
-		guiPiece.getAnim(guiPiece.getState()).setSpeed(200);
-		guiPiece.getAnim(guiPiece.getState()).play();
-		// add guiPiece to array
-		guiPieces[guiPiece.getPos()] = guiPiece;
-	}
 	
 	private String getGameStateAsText() {
 		String state = "unknown";
@@ -207,11 +237,12 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	}
 
 	public static int convertXToColumn(int x){
-		return (x - DRAG_TARGET_SQUARE_START_X)/SQUARE_WIDTH;
+//		return (x - DRAG_TARGET_SQUARE_START_X)/SQUARE_WIDTH;
+		return (x - BOARD_START_X)/SQUARE_WIDTH;
 	}
 
 	public static int convertYToRow(int y){
-		return (y - DRAG_TARGET_SQUARE_START_Y)/SQUARE_HEIGHT;
+		return (y - BOARD_START_Y)/SQUARE_HEIGHT;
 	}
 	
     public static int getPosFromCoords(int column, int row) {
@@ -230,32 +261,33 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		return this.dragPiece != null;
 	}
 	
+	public void addToCapturedGuiPieces(PieceGui guiPiece) {
+		capturedGuiPieces.add(guiPiece);
+	}
+	
 	@Override
 	protected void paintComponent(Graphics g) {
 		// draw background
 		g.drawImage(imgBackground, 0, 0, null);
 
 		// draw pieces
-		int w = -1, b = -1;
 		for (PieceGui guiPiece : guiPieces) {
-			if(guiPiece != null) {
-				if( !guiPiece.isCaptured()) {
-					if(guiPiece.getAnim(guiPiece.getState()) != null) {
-						guiPiece.getAnim(guiPiece.getState()).update(System.currentTimeMillis());
-						g.drawImage(guiPiece.getImage(guiPiece.getState()), guiPiece.getX(), guiPiece.getY() - GUI_PIECE_SCALE,
-									guiPiece.getAnim(guiPiece.getState()).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
-									guiPiece.getAnim(guiPiece.getState()).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
-					}
-				} else {
-					// draw dead pieces on each side of board, white on the left
-					g.drawImage(guiPiece.getAnim(STATE_DEATH).getSpriteAtFrame(guiPiece.getAnim(STATE_DEATH).getSizeOfFrames()-1), 
-							(guiPiece.getColour() == COLOR_WHITE) ? 30 : 900, 
-							100 + ( ((guiPiece.getColour() == COLOR_WHITE) ? ++w : ++b) * 
-									(int)(guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h * 0.8)) - GUI_PIECE_SCALE,
-							guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
-							guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);	
-				}
+			if(guiPiece != null && guiPiece.getAnim(guiPiece.getState()) != null) {
+				guiPiece.getAnim(guiPiece.getState()).update(System.currentTimeMillis());
+				g.drawImage(guiPiece.getImage(guiPiece.getState()), guiPiece.getX(), guiPiece.getY() - GUI_PIECE_SCALE,
+							guiPiece.getAnim(guiPiece.getState()).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
+							guiPiece.getAnim(guiPiece.getState()).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
 			}
+		}
+		// draw dead pieces on each side of board, white on the left
+		int w = -1, b = -1;
+		for (PieceGui guiPiece : capturedGuiPieces) {		
+			g.drawImage(guiPiece.getAnim(STATE_DEATH).getSpriteAtFrame(guiPiece.getAnim(STATE_DEATH).getSizeOfFrames()-1), 
+					(guiPiece.getColour() == COLOR_WHITE) ? 30 : 900, 
+					100 + ( ((guiPiece.getColour() == COLOR_WHITE) ? ++w : ++b) * 
+							(int)(guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h * 0.8)) - GUI_PIECE_SCALE,
+					guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
+					guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
 		}
 
 		// draw last move, if user is not dragging game piece

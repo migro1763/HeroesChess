@@ -79,7 +79,7 @@ public class Game implements Runnable, Vals {
 			activePlayer.setCheck(moveGen.isInCheck(playerTurn));
 			
 			posOfPieceToMove = dragPiece.getPos();
-			board.setDebugText("posOfPieceToMove" + posOfPieceToMove);
+			board.setDebugText("posOfPieceToMove: " + posOfPieceToMove);
 			dragPieceMoveBits = moveGen.possibleMoves(playerTurn, posOfPieceToMove, history);
 			dragPiece.setMoveBits(dragPieceMoveBits);
 			
@@ -105,9 +105,7 @@ public class Game implements Runnable, Vals {
 //				    else {
 				    	selectedMove = activePlayer.getMove();
 				    	// move the selected piece by selected move
-			    		btb.movePiece(selectedMove);
-			    		// do pawn promotion and finish castling setup (move rook etc.)
-			    		
+			    		btb.movePiece(selectedMove);		
 			    		// snap the moved piece to its nearest square
 			    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
 						// set history to last move
@@ -115,35 +113,12 @@ public class Game implements Runnable, Vals {
 				    	// finish move setup for active player
 				    	activePlayer.moveSuccessfullyExecuted(selectedMove);
 				    	// recreate and reposition all gui pieces, according to latest bitboards
-						board.createGuiPieceArray();
+						board.setupGuiPieceArray();
+						// do pawn promotion and finish castling setup (move rook etc.)
 						moveGen.pawnPromoAndCastling(selectedMove);
 						// repaint graphics
 				    	board.repaint();
 						
-			    		
-//				    	// pawn promotion?
-//						char typeToMove = btb.getArraySquare(posOfPieceToMove);
-//						if(Character.toUpperCase(typeToMove) == 'P' && 
-//								(moveBits & MoveGenerator.rankMask[((playerTurn == 0) ? 0 : 7)]) != 0L)
-//							moveGen.promotePawn(BitBoard.getPos(moveBits), playerTurn);
-//						
-//						// if moved piece is a king, negate both castling possibilities
-//						if(Character.toUpperCase(typeToMove) == 'K') {
-//							kSideCastling[playerTurn] = qSideCastling[playerTurn] = false;
-//							int offset = (playerTurn == 0) ? 56 : 0;
-//							// if king move was a castling, also move the corresponding rook
-//							if(selectedMove.equals(new Move(4 + offset, 6 + offset)))
-//								btb.movePiece(new Move(7 + offset, 5 + offset));
-//							else if(selectedMove.equals(new Move(4 + offset, 2 + offset)))
-//								btb.movePiece(new Move(0 + offset, 3 + offset));
-//						}			
-//						// if moved piece is a rook, negate corresponding side castling possibility
-//						if(Character.toUpperCase(typeToMove) == 'R')
-//							if(posOfPieceToMove == 0 || posOfPieceToMove == 56) // if left side of board
-//								qSideCastling[playerTurn] = false;
-//							else if(posOfPieceToMove == 7 || posOfPieceToMove == 63) // if right side of board
-//								kSideCastling[playerTurn] = false;	
-//					}
 				    hasMoved = true;
 				} else {
 					// -1 indicates no move was done, possibly due to wrong square selected or
@@ -198,17 +173,21 @@ public class Game implements Runnable, Vals {
 		return false;
 	}
 	
-    public static String getLongName(char type) {
-    	String colour = (Character.isUpperCase(type)) ? "White " : "Black ";
+    public static String getLongName(char type, int colour) {
     	switch(Character.toUpperCase(type)) {
-    		case 'P':	return colour + "pawn";
-    		case 'R':	return colour + "rook";
-    		case 'N':	return colour + "knight";
-    		case 'B':	return colour + "bishop";
-    		case 'Q':	return colour + "queen";
-    		case 'K':	return colour + "king";
+    		case 'P':	return COLOUR_NAME[colour] + " " + LONG_PIECE_NAME[0];
+    		case 'R':	return COLOUR_NAME[colour] + " " + LONG_PIECE_NAME[3];
+    		case 'N':	return COLOUR_NAME[colour] + " " + LONG_PIECE_NAME[1];
+    		case 'B':	return COLOUR_NAME[colour] + " " + LONG_PIECE_NAME[2];
+    		case 'Q':	return COLOUR_NAME[colour] + " " + LONG_PIECE_NAME[4];
+    		case 'K':	return COLOUR_NAME[colour] + " " + LONG_PIECE_NAME[5];
     		default:	return "";
     	}
+    }
+    
+    public static String getLongName(char type) {
+    	int colour = (Character.isUpperCase(type)) ? 0 : 1;
+    	return getLongName(type, colour);
     }
 	
 	public static String makeStdPos(int pos) {

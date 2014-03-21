@@ -40,9 +40,9 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		int y = mouseDownCompCoords.y;
 		
 		int mouseOverPos = getMouseOverPos(x, y);
-//		Speak.say("mouse is over pos: " + mouseOverPos, true);
+		Speak.say("mouse is over pos: " + mouseOverPos, true);
 		board.getGame().getActivePlayer().setDebugging(false);
-		if(mouseOverPos > -1) {
+		if(mouseOverPos >= 0 && mouseOverPos < 64) {
 			PieceGui guiPieceInFocus = board.getGuiPiece(mouseOverPos);
 			if(guiPieceInFocus != null) {
 //				Speak.say("dragPiece: " + guiPieceInFocus, true);
@@ -51,8 +51,10 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 					// to jump with it's upper left corner to the current mouse position
 					dragOffsetX = x - guiPieceInFocus.getX();
 					dragOffsetY = y - guiPieceInFocus.getY();
-//					guiPieceInFocus.setState(STATE_WALK);
-//					guiPieceInFocus.getAnim(STATE_WALK).setIdlePause(0);
+					guiPieceInFocus.setState(STATE_WALK);
+					guiPieceInFocus.getAnim(STATE_WALK).setIdlePause(0);
+					guiPieceInFocus.getAnim(STATE_WALK).setSpeed(200);
+					guiPieceInFocus.getAnim(STATE_WALK).play();
 					board.setDragPiece(guiPieceInFocus);
 				}
 			}
@@ -67,9 +69,8 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		int pos = -1;
 		if(x > BOARD_START_X && x < (BOARD_START_X + BOARD_WIDTH) &&
 				y > BOARD_START_Y && y < (BOARD_START_Y + BOARD_HEIGHT)) {
-			int column = ChessBoardGui.convertXToColumn(x);
-			int row = ChessBoardGui.convertYToRow(y);
-			pos = ChessBoardGui.getPosFromCoords(column, row);
+			pos = ChessBoardGui.getPosFromCoords(ChessBoardGui.convertXToColumn(x), 
+												ChessBoardGui.convertYToRow(y));
 		}
 		return pos;
 	}
@@ -85,8 +86,9 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 			// set game piece to the new location if possible
 			PieceGui dragPiece = board.getDragPiece();
 			board.setNewPieceLocation(dragPiece, getMouseOverPos(x, y));
-//			dragPiece.setState(STATE_IDLE);
-//			board.getDragPiece().getAnim(STATE_IDLE).resetIdlePause();
+			dragPiece.setState(STATE_IDLE);
+			dragPiece.getAnim(STATE_IDLE).resetIdlePause();
+			dragPiece.getAnim(STATE_IDLE).play();
 			board.repaint();
 			board.setDragPiece(null);
 		}
