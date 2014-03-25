@@ -7,8 +7,9 @@ public abstract class Player {
 
 	protected boolean isCheck;
 	protected boolean dragPiecesEnabled;
+	protected boolean kSideCastling, qSideCastling;
 	protected Move lastMove, currentMove;
-	private boolean isDebugging = false;
+	protected boolean isDebugging = false;
 	
 	public abstract Move getMove();
 	
@@ -40,7 +41,6 @@ public abstract class Player {
 
 	public void setLastMove(Move lastMove) {
 		this.lastMove = lastMove;
-		Speak.say("player => lastMove set to: " + this.lastMove, true);
 	}
 
 	public Move getCurrentMove() {
@@ -49,7 +49,6 @@ public abstract class Player {
 
 	public void setCurrentMove(Move currentMove) {
 		this.currentMove = currentMove;
-		Speak.say("player => currentMove set to: " + this.currentMove, true);
 	}
 
 	public boolean isDebugging() {
@@ -58,5 +57,21 @@ public abstract class Player {
 
 	public void setDebugging(boolean isDebugging) {
 		this.isDebugging = isDebugging;
+	}
+
+	public boolean iskSideCastling() {
+		return kSideCastling;
+	}
+
+	public void setkSideCastling(boolean kSideCastling) {
+		this.kSideCastling = kSideCastling;
+	}
+
+	public boolean isqSideCastling() {
+		return qSideCastling;
+	}
+
+	public void setqSideCastling(boolean qSideCastling) {
+		this.qSideCastling = qSideCastling;
 	}
 }

@@ -13,17 +13,18 @@ public class Animator {
 
     private volatile boolean running = false;
     private volatile boolean idle = false;
+    private volatile boolean dead = false;
 
     private long previousTime, speed, variance;
 	private long idlePause, idlePauseDuration, previousIdleTime; // time in millis to pause between idle anims
     private int frameAtPause, currentFrame;
+	private boolean finishedDeath = false;
 
     public Animator(ArrayList<BufferedImage> frames){
         this.frames = frames;
         unit = null;
         variance = new Random().nextInt(10);
-		idlePauseDuration = (new Random().nextInt(20) + 10) * 500;
-		idlePause = idlePauseDuration;
+		setRandomIdlePauseDuration();
     }
 
     public void setSpeed(long speed){
@@ -38,19 +39,35 @@ public class Animator {
     	return frames.size();
     }
 
-    // not used
-    public int getMaxHeight() {
-		int max = 0, temp;
-		for (BufferedImage frame : frames) {
-			temp = frame.getHeight();
-			if( temp > max)
-				max = temp;
-		}
-		return max;
-	}
+//    // not used
+//    public int getMaxHeight() {
+//		int max = 0, temp;
+//		for (BufferedImage frame : frames) {
+//			temp = frame.getHeight();
+//			if( temp > max)
+//				max = temp;
+//		}
+//		return max;
+//	}
 
 	public void setUnit(Unit unit) {
 		this.unit = unit;
+	}
+	
+	public boolean isDead() {
+		return dead;
+	}
+
+	public void setDead(boolean dead) {
+		this.dead = dead;
+	}
+
+	public boolean isFinishedDeath() {
+		return finishedDeath;
+	}
+
+	public void setFinishedDeath(boolean finishedDeath) {
+		this.finishedDeath = finishedDeath;
 	}
 
 	public void update(long time) {	
@@ -65,7 +82,11 @@ public class Animator {
                 if(currentFrame < frames.size()-1 && !idle) {
                 	currentFrame++;
                	} else {
-               		currentFrame = 0;
+               		if(dead) {
+               			currentFrame = frames.size()-1;
+               			finishedDeath = true;
+               		} else
+               			currentFrame = 0;
                		idle = true;
 				}
 				sprite = frames.get(currentFrame);
@@ -83,6 +104,19 @@ public class Animator {
 	}
 	
 	public void resetIdlePause() {
+		idlePause = idlePauseDuration;
+	}
+	
+	public long getIdlePauseDuration() {
+		return idlePauseDuration;
+	}
+
+	public void setIdlePauseDuration(long idlePauseDuration) {
+		this.idlePauseDuration = idlePauseDuration;
+	}
+	
+	public void setRandomIdlePauseDuration() {
+		idlePauseDuration = (new Random().nextInt(20) + 10) * 500;
 		idlePause = idlePauseDuration;
 	}
 
@@ -110,5 +144,4 @@ public class Animator {
         currentFrame = frameAtPause;
         running = true;
     }
-
 }

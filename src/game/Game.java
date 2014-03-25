@@ -3,10 +3,6 @@ package game;
 import gui.ChessBoardGui;
 import gui.PieceGui;
 import interfaces.Vals;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import players.Player;
 
 public class Game implements Runnable, Vals {
@@ -14,9 +10,10 @@ public class Game implements Runnable, Vals {
 	private ChessBoardGui board;
 	private MoveGenerator moveGen;
 	private int playerTurn = COLOR_WHITE; // who's turn it is
-	public boolean[] kSideCastling = {true, true}; // true if player colour can castle king side
-	public boolean[] qSideCastling = {true, true}; // true if player colour can castle queen side
 	private Player blackPlayer = null, whitePlayer = null, activePlayer = null;
+	private boolean hasCheckTestedGameLoop = false;
+	private boolean dragPiecePossibleMovesDone = false;
+	long testTime = 0L;
 	
 	public Game() {
 		btb = new BitBoard(this);
@@ -30,8 +27,6 @@ public class Game implements Runnable, Vals {
 		this.moveGen = clone.moveGen;
 		this.board = clone.board;
 		this.playerTurn = clone.playerTurn;
-		this.kSideCastling = clone.kSideCastling;
-		this.qSideCastling = clone.qSideCastling;
 		this.whitePlayer = clone.whitePlayer;
 		this.blackPlayer = clone.blackPlayer;
 		this.activePlayer = clone.activePlayer;
@@ -44,9 +39,7 @@ public class Game implements Runnable, Vals {
 		System.out.println("ChessGame: waiting for players");
 		while (blackPlayer == null || whitePlayer == null) {
 			// players are still missing
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {}
+			threadPause(1000);
 		}
 		// set start player, white always starts game
 		setPlayerTurn(playerTurn);				
@@ -54,6 +47,7 @@ public class Game implements Runnable, Vals {
 		
 		// start game flow loop
 		boolean didMove = false;
+		testTime = System.currentTimeMillis();
 		while(!isGameOver()) {
 			didMove = gameLoop(history);
 			changePlayerTurnAfterMove(didMove);
@@ -61,7 +55,6 @@ public class Game implements Runnable, Vals {
 	}
 
 	public boolean gameLoop(Move history) {
-		int posOfPieceToMove = -1;
 		Move selectedMove = null;
 		boolean hasMoved = false;
 		
@@ -74,51 +67,31 @@ public class Game implements Runnable, Vals {
 		// gui board's dragpiece's moveBits to it.
 		BB dragPieceMoveBits = new BB();
 		PieceGui dragPiece = board.getDragPiece();
-		if(dragPiece != null) {
-			// is active player in check?
-			activePlayer.setCheck(moveGen.isInCheck(playerTurn));
-			
-			posOfPieceToMove = dragPiece.getPos();
-			board.setDebugText("posOfPieceToMove: " + posOfPieceToMove);
-			dragPieceMoveBits = moveGen.possibleMoves(playerTurn, posOfPieceToMove, history);
-			dragPiece.setMoveBits(dragPieceMoveBits);
-			
-//			// DEBUG:
-//			List<Move> moves = MoveGenerator.bitsAsMoveList(dragPieceMoveBits, dragPiece.getPos());
-//			Speak.say("Moves possible: ");
-//			for (Move move : moves)
-//				Speak.say(Move.makeStdMove(move.getSrc(), move.getTrg()) + ", ");
-//			Speak.say();
-//			// DEBUG END
 		
-			if(dragPieceMoveBits.getBits() != 0L) {
-				long moveBits = 0L;
-				if(activePlayer.getCurrentMove() != null)
-					moveBits = 1L<<activePlayer.getCurrentMove().getTrg();
-				else
-					return false;
+		// do this block if player has picked and is holding a piece
+		// ---------------------------------------------------------
+		if(dragPiece != null) {
+			dragPieceMoveBits = dragPiece.getMoveBits();
+
+			if(activePlayer.getCurrentMove() != null) {
+				long moveBits = 1L<<activePlayer.getCurrentMove().getTrg();
 				
-				if((dragPieceMoveBits.getBits() & moveBits) != 0L) {			
-					// if move is (still) causing a check
-//				    if(moveGen.testCheck(playerTurn, moveBits))
-//				    	return false;    
-//				    else {
-				    	selectedMove = activePlayer.getMove();
-				    	// move the selected piece by selected move
-			    		btb.movePiece(selectedMove);		
-			    		// snap the moved piece to its nearest square
-			    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
-						// set history to last move
-				    	history = selectedMove;
-				    	// finish move setup for active player
-				    	activePlayer.moveSuccessfullyExecuted(selectedMove);
-				    	// recreate and reposition all gui pieces, according to latest bitboards
-						board.setupGuiPieceArray();
-						// do pawn promotion and finish castling setup (move rook etc.)
-						moveGen.pawnPromoAndCastling(selectedMove);
-						// repaint graphics
-				    	board.repaint();
-						
+				if((dragPieceMoveBits.getBits() & moveBits) != 0L) {
+			    	selectedMove = activePlayer.getMove();
+			    	// move the selected piece by selected move
+		    		movePiece(selectedMove);		
+		    		// snap the moved piece to its nearest square
+		    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
+					// set history to last move
+			    	history = selectedMove;
+			    	// finish move setup for active player
+			    	activePlayer.moveSuccessfullyExecuted(selectedMove);
+					// do pawn promotion and finish castling setup (move rook etc.)
+					moveGen.pawnPromoAndCastling(selectedMove);
+			    	// recreate and reposition all gui pieces, according to latest bitboards
+					board.setupGuiPieceArray();
+					// repaint graphics
+//			    	board.repaint();
 				    hasMoved = true;
 				} else {
 					// -1 indicates no move was done, possibly due to wrong square selected or
@@ -127,16 +100,45 @@ public class Game implements Runnable, Vals {
 				}			
 			}
 		}
+		// -----------------------------------------
+		// end of block when player is holding piece
+		
 		return hasMoved;
 	}
 	
+	public boolean isHasCheckTestedGameLoop() {
+		return hasCheckTestedGameLoop;
+	}
+
+	public void setHasCheckTestedGameLoop(boolean hasGameLoopCheckTested) {
+		this.hasCheckTestedGameLoop = hasGameLoopCheckTested;
+	}
+
+	public void movePiece(Move move) {
+        char oppType = btb.getArraySquare(move.getTrg());
+        
+        // if target square is not empty = attack!
+        if(oppType != ' ') {
+        	// add captured piece to list of captured pieces
+        	PieceGui deathPiece = new PieceGui(board.getGuiPiece(move.getTrg()));
+        	board.addToCapturedGuiPieces(deathPiece);
+        	// set position bit of oppType's bitboard to 0
+        	btb.setBB(oppType, move.getTrg(), 0);
+        	// set the guiPiece in the guiPiece array to null
+        	board.setGuiPiece(move.getTrg(), null);
+        	// setup and start attack animation
+        	board.playAttackAnim(move, board.getGuiPiece(move.getSrc()), deathPiece);
+        }
+		btb.movePieceBits(move);		
+	}
+
 	private void changePlayerTurnAfterMove(boolean didMove) {
 		if(didMove) {
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {}
+			threadPause(50);
 			setPlayerTurn(1-playerTurn);
-			board.setDebugText("Player turn: " + COLOUR_NAME[playerTurn]);
+			moveGen.isInCheck(playerTurn);
+			hasCheckTestedGameLoop = false;
+			dragPiecePossibleMovesDone = false;
 		}		
 	}
 	
@@ -153,6 +155,10 @@ public class Game implements Runnable, Vals {
 	public Player getActivePlayer() {
 		return activePlayer;
 	}
+	
+	public Player getPlayer(int colour) {
+		return (colour == COLOR_WHITE) ? whitePlayer : blackPlayer;
+	}
 
 	public void setActivePlayer(Player activePlayer) {
 		this.activePlayer = activePlayer;
@@ -161,8 +167,8 @@ public class Game implements Runnable, Vals {
 	
 	public void setPlayer(int pieceColor, Player playerHandler) {
 		switch (pieceColor) {
-			case 0: this.whitePlayer = playerHandler; break;
-			case 1: this.blackPlayer = playerHandler; break;
+			case COLOR_WHITE: this.whitePlayer = playerHandler; break;
+			case COLOR_BLACK: this.blackPlayer = playerHandler; break;
 			default: 
 				throw new IllegalArgumentException("Invalid pieceColor: " + pieceColor);
 		}
@@ -185,6 +191,19 @@ public class Game implements Runnable, Vals {
     	}
     }
     
+    // return number for type for use with Declarations interface
+    public static int getTypeNumber(char type, int colour) {
+    	switch(Character.toUpperCase(type)) {
+    		case 'K':	return 0 + colour * 6;
+    		case 'N':	return 1 + colour * 6;
+    		case 'B':	return 2 + colour * 6;
+    		case 'Q':	return 3 + colour * 6;
+    		case 'P':	return 4 + colour * 6;
+    		case 'R':	return 5 + colour * 6;
+    		default:	return -1;
+    	}
+    }
+    
     public static String getLongName(char type) {
     	int colour = (Character.isUpperCase(type)) ? 0 : 1;
     	return getLongName(type, colour);
@@ -204,6 +223,18 @@ public class Game implements Runnable, Vals {
 
 	public ChessBoardGui getBoard() {
 		return board;
+	}
+	
+	public MoveGenerator getMoveGen() {
+		return moveGen;
+	}
+	
+	public static void threadPause(int millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			Speak.say("Thread-sleep interrupted at: " + e.getStackTrace(), true);
+		}
 	}
 
 	@Override

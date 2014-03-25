@@ -3,6 +3,7 @@ package gui;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
+import game.Speak;
 import interfaces.Declarations;
 import pieces.Piece;
 
@@ -42,6 +43,10 @@ public class PieceGui extends Piece implements Declarations {
 
 	public Animator getAnim(int state) {
 		return anim.get(state);
+	}
+	
+	public ArrayList<Animator> getAllAnim() {
+		return anim;
 	}
 
 	public int getX() {
@@ -92,18 +97,26 @@ public class PieceGui extends Piece implements Declarations {
 		return anim.get(state).sprite.getHeight(null);
 	}
 
-	/**
-	 * snap the guiPiece back to the coordinates that
-	 * correspond with the underlying piece's row and column
-	 */
-	public void snapToNearestSquare() {
-		x = ChessBoardGui.convertColumnToX(getColumn());
-		y = ChessBoardGui.convertRowToY(getRow());
+	// snap the guiPiece back to the coordinates that correspond with 
+	// the underlying piece's row and column
+	public void snapToNearestSquare(int pos, boolean isAttack, boolean isAttacker) {
+		int offset = 0;
+		if(isAttack)
+			offset = isAttacker ? -SQUARE_WIDTH>>1 : SQUARE_WIDTH>>1;		
+		x = ChessBoardGui.convertColumnToX(pos%8) + offset;
+		y = ChessBoardGui.convertRowToY(pos/8);
+	}
+	
+	public void snapToNearestSquare(boolean isAttack, boolean isAttacker) {
+		snapToNearestSquare(this.pos, isAttack, isAttacker);
 	}
 	
 	public void snapToNearestSquare(int pos) {
-		x = ChessBoardGui.convertColumnToX(pos%8);
-		y = ChessBoardGui.convertRowToY(pos/8);
+		snapToNearestSquare(pos, false, false);
+	}
+	
+	public void snapToNearestSquare() {
+		snapToNearestSquare(this.pos, false, false);
 	}
 	
 	// unfinished!

@@ -1,13 +1,13 @@
 package game;
 
-import gui.GuiPiece;
+import gui.PieceGui;
 
 public class BinaryTree {
 
 	Node root;
 
-	public void addNode(GuiPiece piece) {
-		Node newNode = new Node(piece);
+	public void addNode(PieceGui guiPiece) {
+		Node newNode = new Node(guiPiece);
 
 		if(root == null) {
 			root = newNode;
@@ -19,7 +19,7 @@ public class BinaryTree {
 			while(true) {
 				parent = focusNode;
 
-				if(piece.getPiece().getId() < focusNode.id) {
+				if(guiPiece.getId() < focusNode.id) {
 					focusNode = focusNode.leftChild;
 
 					if(focusNode == null) {
@@ -56,8 +56,8 @@ public class BinaryTree {
 		return focusNode;
 	}
 	
-	public Node findNode(GuiPiece piece) {
-		return findNode(piece.getPiece().getId());
+	public Node findNode(PieceGui piece) {
+		return findNode(piece.getId());
 	}
 
 	public void inOrderTraverseTree(Node focusNode) {
@@ -73,16 +73,16 @@ public class BinaryTree {
 
 	public class Node {
 		int id;
-		private GuiPiece guiPiece;
+		private PieceGui guiPiece;
 
 		Node leftChild, rightChild;
 
-		public Node(GuiPiece guiPiece) {
-			this.id = guiPiece.getPiece().getId();
+		public Node(PieceGui guiPiece) {
+			this.id = guiPiece.getId();
 			this.guiPiece = guiPiece;
 		}
 
-		public GuiPiece getGuiPiece() {
+		public PieceGui getGuiPiece() {
 			return guiPiece;
 		}
 

@@ -1,5 +1,7 @@
 package interfaces;
 
+import java.awt.Color;
+
 public interface Vals {
 	public static final String[] COLOUR_NAME = {"WHITE", "black"};
 	
@@ -8,6 +10,10 @@ public interface Vals {
 	public static final int GAME_STATE_END_BLACK_WON = 2;
 	public static final int GAME_STATE_END_WHITE_WON = 3;
 	public static final int COLOR_WHITE = 0, COLOR_BLACK = 1;
+	
+	public static final Color COLOUR_YELLOW = new Color(255, 255, 0, 128);
+	public static final Color COLOUR_CYAN = new Color(64, 192, 255, 192);
+	public static final Color COLOUR_GREEN = new Color(0, 255, 0, 160);
 	
 	public static final int ROW_1 = 0, ROW_2 = 1, ROW_3 = 2, ROW_4 = 3, 
 							ROW_5 = 4, ROW_6 = 5, ROW_7 = 6, ROW_8 = 7;

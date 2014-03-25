@@ -2,6 +2,7 @@ package pieces;
 
 import game.BB;
 import game.Game;
+import game.Speak;
 
 public class Piece extends Movable {
 		

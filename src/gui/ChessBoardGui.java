@@ -1,16 +1,14 @@
 package gui;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-//import java.util.List;
-
-
-
 import java.util.HashMap;
 import java.util.List;
 
@@ -19,10 +17,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 
 import pieces.Piece;
 import game.BitBoard;
-import game.ChessGame;
 import game.Game;
 import game.Move;
 import game.Speak;
@@ -34,16 +32,16 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	private static final long serialVersionUID = 1L;
 	private Image imgBackground;
 	private JLabel lblGameState, debugTextLabel;
-	private String debugText = "";
+	private HtmlLabel debugText;
 
 	private Game game;
 	private HashMap<String, PieceGui> pieceGuisBuffer = new HashMap<String, PieceGui>();
 	private PieceGui[] guiPieces = new PieceGui[64];
 	private List<PieceGui> capturedGuiPieces = new ArrayList<PieceGui>();
-	private PieceGui dragPiece;
+	private PieceGui dragPiece = null, attackPiece = null, deathPiece = null;
 	private int piecesSize = 0;
 
-	private Move lastMove;
+	public Move lastMove = null;
 	private double getScaleAdd;
 	
 	// from Heroes class
@@ -60,7 +58,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
     
     public ChessBoardGui(Game game) {
 		
-    	this.setLayout(null);
+    	this.setLayout(new BorderLayout());
 		
     	// load background image
 		try {
@@ -86,7 +84,7 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		setupGuiPieceArray();
 	
 		// label to display game state
-		String labelText = this.getGameStateAsText();
+		String labelText = getGameStateAsText();
 		lblGameState = new JLabel(labelText);
 		lblGameState.setBounds(10, BOARD_HEIGHT>>1, 250, 100);
 		lblGameState.setForeground(Color.WHITE);
@@ -94,15 +92,19 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		this.add(lblGameState);
 		
 		// label to display debug text, via setDebugText(String text)
-		debugTextLabel = new JLabel(debugText);
-		debugTextLabel.setBounds(10, 10, 400, 80);
+		debugText = new HtmlLabel();
+		debugTextLabel = new JLabel(debugText.getText(), SwingConstants.LEADING);
+		debugTextLabel.setBounds(5, 5, 200, 120);
+		debugTextLabel.setPreferredSize(new Dimension(200, 120));
 		debugTextLabel.setForeground(Color.YELLOW);
-		// add JLabel to JPanel (this)
-		this.add(debugTextLabel);
+		debugTextLabel.setVerticalAlignment(JLabel.BOTTOM);
+		debugTextLabel.setVerticalTextPosition(JLabel.BOTTOM);
+		debugTextLabel.setAlignmentY(BOTTOM_ALIGNMENT);
+		debugTextLabel.setOpaque(false);
+    	this.add(debugTextLabel, BorderLayout.PAGE_START);
 
 		// create application frame and set visible
 		HeroesFrame f = new HeroesFrame();
-		f.setSize(80, 80);
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		f.add(this);
 		f.setSize(imgBackground.getWidth(null) + 0, imgBackground.getHeight(null) + 0);
@@ -178,41 +180,50 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	}
 	
 	public PieceGui getPieceGuiFromBuffer(String key) {
-		return pieceGuisBuffer.get(key);
+		PieceGui guiPiece = new PieceGui(pieceGuisBuffer.get(key));
+		guiPiece.getAnim(STATE_IDLE).setRandomIdlePauseDuration();
+		return guiPiece;
 	}
     
+	// recreate and reposition all gui pieces, according to current bitboards
     public void setupGuiPieceArray() {
     	PieceGui guiPiece = null;
     	int colour;
+    	char type;
 		for(int pos = 0; pos < 64; pos++) {
-			colour = -1;
+			type = game.getBitBoard().getArraySquare(pos);
+			
+			// determine piece colour
 			if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_BLACK)) != 0L) {
 				colour = COLOR_BLACK;
 			} else if(((1L<<pos) & game.getBitBoard().getColourPieces(COLOR_WHITE)) != 0L) {
 				colour = COLOR_WHITE;
 			} else
-				// null when square is empty
-				guiPiece = null;
-			
+				// if square is empty
+				colour = -1;
+
+			// set gui pieces
 			if(colour >= 0) {
 				// load guiPiece from PieceGui buffer
-				guiPiece = new PieceGui(pieceGuisBuffer.get(Game.getLongName(
-						game.getBitBoard().getArraySquare(pos), colour)));
+				guiPiece = getPieceGuiFromBuffer(Game.getLongName(type, colour));
 				// set square position
 				guiPiece.setPos(pos);
 				guiPiece.setId(pos);
+			} else {
+				// null if square is empty
+				guiPiece = null;
 			}
 			guiPieces[pos] = guiPiece;
-		}	
+		}
     }
 	
 	private String getGameStateAsText() {
 		String state = "unknown";
 		switch (game.getPlayerTurn()) {
-			case ChessGame.GAME_STATE_BLACK: state = "black";break;
-			case ChessGame.GAME_STATE_END_WHITE_WON: state = "white won";break;
-			case ChessGame.GAME_STATE_END_BLACK_WON: state = "black won";break;
-			case ChessGame.GAME_STATE_WHITE: state = "white";break;
+			case GAME_STATE_BLACK: state = "black";break;
+			case GAME_STATE_END_WHITE_WON: state = "white won";break;
+			case GAME_STATE_END_BLACK_WON: state = "black won";break;
+			case GAME_STATE_WHITE: state = "white";break;
 		}
 		if(game.getActivePlayer() != null && game.getActivePlayer().isCheck())
 			state += " in check!";
@@ -221,11 +232,11 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	}
 	
 	public String getDebugText() {
-		return debugText;
+		 return debugText.getText();
 	}
 
 	public void setDebugText(String debugText) {
-		this.debugText = debugText;
+		this.debugText.addLine(debugText);
 	}
 
 	public static int convertColumnToX(int column){
@@ -244,6 +255,10 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 	public static int convertYToRow(int y){
 		return (y - BOARD_START_Y)/SQUARE_HEIGHT;
 	}
+	
+    public static int getPosFromXY(int x, int y) {
+    	return convertXToColumn(x) + ( convertYToRow(y) * 8);
+    }
 	
     public static int getPosFromCoords(int column, int row) {
     	return column + (row * 8);
@@ -273,10 +288,14 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		// draw pieces
 		for (PieceGui guiPiece : guiPieces) {
 			if(guiPiece != null && guiPiece.getAnim(guiPiece.getState()) != null) {
-				guiPiece.getAnim(guiPiece.getState()).update(System.currentTimeMillis());
-				g.drawImage(guiPiece.getImage(guiPiece.getState()), guiPiece.getX(), guiPiece.getY() - GUI_PIECE_SCALE,
-							guiPiece.getAnim(guiPiece.getState()).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
-							guiPiece.getAnim(guiPiece.getState()).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
+				int state = guiPiece.getState();
+				int typeNbr = Game.getTypeNumber(guiPiece.getType(), guiPiece.getColour());
+				int offsetX = UNIT_ANIM_STARTX[state][typeNbr];
+				int offsetY = UNIT_ANIM_STARTY[state][typeNbr];
+				guiPiece.getAnim(state).update(System.currentTimeMillis());
+				g.drawImage(guiPiece.getImage(state), guiPiece.getX()+offsetX, guiPiece.getY()+offsetY - GUI_PIECE_SCALE,
+							guiPiece.getAnim(state).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
+							guiPiece.getAnim(state).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
 			}
 		}
 		// draw dead pieces on each side of board, white on the left
@@ -289,17 +308,39 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 					guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
 					guiPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
 		}
+		
+		// draw guiPieces in attack, i.e. attack and death animation
+		if(deathPiece != null && attackPiece != null) {
+			// death animation
+			if(!deathPiece.getAnim(STATE_DEATH).isFinishedDeath()) {
+				attackPiece.setState(STATE_ATTACK); // making sure attackPiece has attack animation
+				deathPiece.getAnim(STATE_DEATH).update(System.currentTimeMillis());
+				g.drawImage(deathPiece.getImage(STATE_DEATH), deathPiece.getX(), deathPiece.getY() - GUI_PIECE_SCALE,
+						deathPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
+						deathPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
+			} else {
+				deathPiece = null;
+				attackPiece.setState(STATE_IDLE);
+				attackPiece.getAnim(STATE_IDLE).play();
+				attackPiece = null;
+			}
+		}
+		
+		// draw square rectangles section -----------------------------------------------------------------
 
-		// draw last move, if user is not dragging game piece
-		if( !isUserDraggingPiece() && lastMove != null ){
-			int highlightSourceX = convertColumnToX(lastMove.getSrc()%8);
-			int highlightSourceY = convertRowToY(lastMove.getSrc()/8);
-			int highlightTargetX = convertColumnToX(lastMove.getTrg()%8);
-			int highlightTargetY = convertRowToY(lastMove.getTrg()/8);
+		// draw last move as yellow rectangles, if user is not dragging game piece
+		if(!isUserDraggingPiece()) {
+			Move lastPlayersMove = game.getPlayer(1-game.getPlayerTurn()).getLastMove();
+			if(lastPlayersMove != null) {
+				int highlightSourceX = convertColumnToX(lastPlayersMove.getSrc()%8);
+				int highlightSourceY = convertRowToY(lastPlayersMove.getSrc()/8);
+				int highlightTargetX = convertColumnToX(lastPlayersMove.getTrg()%8);
+				int highlightTargetY = convertRowToY(lastPlayersMove.getTrg()/8);
+				g.setColor(COLOUR_YELLOW);
 
-			g.setColor(Color.YELLOW);
-			g.drawRoundRect( highlightSourceX, highlightSourceY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
-			g.drawRoundRect( highlightTargetX, highlightTargetY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
+				g.drawRoundRect( highlightSourceX, highlightSourceY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
+				g.drawRoundRect( highlightTargetX, highlightTargetY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);
+			}
 		}
 
 		// draw valid target locations, if user is dragging a game piece
@@ -312,24 +353,14 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			// draw cyan rectangle on square where dragPiece is currently
 			int column = convertXToColumn(dragPiece.getX());
 			int row = convertYToRow(dragPiece.getY());
-			drawRect(g, getPosFromCoords(column, row), Color.CYAN);
-		}
-		
-		if(game.getActivePlayer().isDebugging()) {
-			int[] piecePositions = BitBoard.getMultiPos(game.getBitBoard().getColourPieces(game.getPlayerTurn()));
-			drawGreenRects(g, piecePositions);
+			drawRect(g, getPosFromCoords(column, row), COLOUR_CYAN);
 		}
 		
 		// draw game state label
 		lblGameState.setText(getGameStateAsText());
 		debugTextLabel.setText(getDebugText());
+		
 		repaint();
-	}
-	
-	public void drawGreenRects(Graphics gr, int[] movePositions) {
-		for (int pos : movePositions) {
-			drawRect(gr, pos, Color.GREEN);
-		}		
 	}
 	
 	public void drawRect(Graphics gr, int pos, Color colour) {
@@ -340,26 +371,28 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		gr.drawRoundRect( rectX, rectY, SQUARE_WIDTH-12, SQUARE_HEIGHT-12,10,10);		
 	}
 	
+	public void drawGreenRects(Graphics gr, int[] movePositions) {
+		for (int pos : movePositions) {
+			drawRect(gr, pos, COLOUR_GREEN);
+		}		
+	}
+	
 	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
 		// if dragPiece hasn't moved outside of start square, snap back to start
-		if(draggedPiece != null) {
-			if(draggedPiece.getPos() == targetPos)
+		if(draggedPiece.getPos() == targetPos)
+			draggedPiece.snapToNearestSquare();
+		// else move dragPiece to targetPos square
+		else if(draggedPiece.getMoveBits() != null) {
+			Move move = new Move(draggedPiece.getPos(), targetPos);
+			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
+				game.getActivePlayer().setCurrentMove(move);
+			} else {
+				// if target square wasn't part of valid moves, snap back to start
 				draggedPiece.snapToNearestSquare();
-			else if(draggedPiece.getMoveBits() != null) {
-				Move move = new Move(draggedPiece.getPos(), targetPos);
-				if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
-					game.getActivePlayer().setCurrentMove(move);
-					lastMove = game.getActivePlayer().getLastMove();
-				} else {
-					// if target square wasn't part of valid moves, snap back to start
-					draggedPiece.snapToNearestSquare();
-				}
 			}
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {}
-		} else
-			return;
+		}
+		// thread pause 0.1 seconds
+//		Game.threadPause(120);
 	}
 
 	public Game getGame() {
@@ -388,5 +421,25 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 
 	public void setPiecesSize(int piecesSize) {
 		this.piecesSize = piecesSize;
+	}
+
+	public void playAttackAnim(Move move, PieceGui attackingPiece, PieceGui attackedPiece) {
+    	// snap attacker half a square left of square
+		if(attackingPiece != null && attackedPiece != null) {
+			setDebugText("playing attack anim");
+			attackPiece = new PieceGui(attackingPiece);
+			attackPiece.getAnim(attackPiece.getState()).stop();
+			attackPiece.setState(STATE_ATTACK);
+			attackPiece.getAnim(STATE_ATTACK).setSpeed(200);
+			attackPiece.getAnim(STATE_ATTACK).play();
+			deathPiece = attackedPiece;
+			deathPiece.snapToNearestSquare(true, false);
+			deathPiece.getAnim(deathPiece.getState()).stop();
+			deathPiece.setState(STATE_DEATH);
+			deathPiece.getAnim(STATE_DEATH).setDead(true);
+			deathPiece.getAnim(STATE_DEATH).setSpeed(200);
+			deathPiece.getAnim(STATE_DEATH).setFinishedDeath(false);
+			deathPiece.getAnim(STATE_DEATH).play();
+		}
 	}
 }

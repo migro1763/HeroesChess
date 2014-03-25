@@ -63,7 +63,6 @@ public class Reader implements Declarations {
 		String[] tmp;
 
 		//combine the arrays split by whitespace
-		//System.out.println("propertyName: " + propFile.getProperty(propertyName));
 		String valueString = propFile.getProperty(propertyName);
 		if(valueString != null) {
 			tmp = valueString.split("\\s+");

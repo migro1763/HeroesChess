@@ -2,6 +2,7 @@ package game;
 
 import gui.ChessBoardGui;
 import gui.PieceGui;
+import interfaces.Declarations;
 import interfaces.Vals;
 
 import java.awt.event.WindowAdapter;
@@ -16,7 +17,7 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
-public class MoveGenerator implements Vals {
+public class MoveGenerator implements Vals, Declarations {
 	private static final long FILE_AB = 217020518514230019L; // 1's on all of column A + B (left side)
 	private static final long FILE_GH = -4557430888798830400L; // 1's on all of column G + H (right side)
 //	private static final long CENTRE=103481868288L; // 1's on the 4 most centered squares
@@ -199,11 +200,21 @@ public class MoveGenerator implements Vals {
 		return andBits;
 	}
 	
-	// queen
+	public long getQueenMoves(int pos, int colour, BitBoard testBB) {
+		long moveBits = getHoriVertMoves(pos, colour, testBB);
+		return moveBits |= getDiagAntiDiagMoves(pos, colour, testBB);
+	}
+		
+	// all queens
 	public long getQueenMoves(int colour, BitBoard testBB) {
-		int queenPos = verifyPosition(BitBoard.getPos(testBB.getBB((colour == 0) ? 'Q' : 'q')));
-		long moveBits = getHoriVertMoves(queenPos, colour, testBB);
-		moveBits |= getDiagAntiDiagMoves(queenPos, colour, testBB); 
+		BB queensBB = testBB.getBB((colour == 0) ? 'Q' : 'q');
+		int queensCount = Long.bitCount(queensBB.getBits());
+		int[] queenPositions = BitBoard.getMultiPos(queensBB.getBits());
+		long moveBits = 0L;
+		for(int pos = 0; pos < queensCount; pos++) {
+			moveBits |= getHoriVertMoves(queenPositions[pos], colour, testBB);
+			moveBits |= getDiagAntiDiagMoves(queenPositions[pos], colour, testBB);
+		}
 		return moveBits; 
 	}
 	
@@ -215,11 +226,9 @@ public class MoveGenerator implements Vals {
 				((binPos<<8 | binPos<<7 | binPos>>>1 | binPos>>>9) & ~fileMask[7]);
 		
 		// castling
-		String cMoves = getCastling(colour);
-		if(!cMoves.isEmpty())
-			for(int i = 0; i < cMoves.length(); i+=4)
-				andBits |= 1L<<ChessBoardGui.getPosFromCoords(BitBoard.getPosFromMove(cMoves.substring(i, i+4), 2),
-						BitBoard.getPosFromMove(cMoves.substring(i, i+4), 3));
+		Move cMove = getCastling(colour);
+		if(cMove != null)
+			andBits |= cMove.getTrg();
 		return getKingSafe(colour, andBits);
 	}
 	
@@ -245,21 +254,50 @@ public class MoveGenerator implements Vals {
 	// returns the type of opponent piece that is checking current player's king
 	public char pieceTypeChecking(int colour, BitBoard testBB) {
 		long kingBinPos = 1L<<testBB.getKingPos(colour);
-		if((getAttacks('p', 1-colour, testBB) & kingBinPos) != 0L) return 'p';
-		else if((getAttacks('r', 1-colour, testBB) & kingBinPos) != 0L) return 'r';
-		else if((getAttacks('n', 1-colour, testBB) & kingBinPos) != 0L) return 'n';
-		else if((getAttacks('b', 1-colour, testBB) & kingBinPos) != 0L) return 'b';
-		else if((getAttacks('q', 1-colour, testBB) & kingBinPos) != 0L) return 'q';
+		if((getAttacks('p', 1-colour, testBB) & kingBinPos) != 0L) {
+			return 'p'; // test if pawns attack
+		}
+		else if((getAttacks('r', 1-colour, testBB) & kingBinPos) != 0L) {
+			return 'r'; // test if rooks attack
+		}
+		else if((getAttacks('n', 1-colour, testBB) & kingBinPos) != 0L) {
+			return 'n'; // test if knights attack
+		}
+		else if((getAttacks('b', 1-colour, testBB) & kingBinPos) != 0L) {
+			return 'b'; // test if bishops attack
+		}
+		else if((getAttacks('q', 1-colour, testBB) & kingBinPos) != 0L) {
+			return 'q'; // test if queen(s) attack(s)
+		}
 		else return 0;		
 	}
 	
 	public boolean isInCheck(int colour, BitBoard testBB) {
-		if(pieceTypeChecking(colour, testBB) != 0L) return true;
-		else return false;
+		if((pieceTypeChecking(colour, testBB) == 0)) 
+			return false; // not in check
+		else 
+			return true; // in check!
 	}
 	
 	public boolean isInCheck(int colour) {
-		return(isInCheck(colour, gameBB));
+		return isInCheck(colour, gameBB);
+	}
+	
+	// tests if bitboard of moves and bits of opponent piece checking king, will be zero.
+	// if zero, king is still in check and true is returned. otherwise return false (no longer in check)
+	public boolean testCheck(int colour, long moveBits) {
+		long culpritBits = 0L; // bitboard for opponent type checking's bits
+		char oppTypeChecking = pieceTypeChecking(colour, gameBB);
+		Speak.say("testCheck", true);
+		if(oppTypeChecking > 0) { // if it's zero (no char value), then pieceTypeChecking() didn't find the culprit type
+			culpritBits |= gameBB.getBB(oppTypeChecking).getBits(); // set to opponent type checking's bits
+			if((moveBits & culpritBits) == 0L) {
+				game.getBoard().setDebugText("King still in check!");
+				return true;					
+			}
+		}
+		game.getActivePlayer().setCheck(false); // current player is no longer in check
+		return false;
 	}
 	
 	// get bitboard of safe moves for king, i.e. moves not resulting in a check
@@ -272,26 +310,27 @@ public class MoveGenerator implements Vals {
 		return getKingSafe(colour, kingMoves, gameBB);
 	}
 	
-	public String getCastling(int colour) {
-        String list = "";
+	public Move getCastling(int colour) {
+        Move move = null;
         long rookBB = gameBB.getBB((colour == 0) ? 'R' : 'r').getBits();
         int offset = (colour == 0) ? 56 : 0; // offset castling rooks by 56 if white
         
         if(!isInCheck(colour)) { 	         
 	        // king side castling
-        	if(game.kSideCastling[colour])
+        	if(game.getPlayer(colour).iskSideCastling())
 		        if (((1L<<(CASTL_BR_L + offset)) & rookBB) != 0)
-		            if ((OCCUPIED & ((1L<<(5 + offset))|(1L<<(6 + offset)))) == 0) {
-		                list += (colour == 0) ? "7476" : "0406"; // king and rook moves
-		            }
+		            if ((OCCUPIED & ((1L<<(5 + offset))|(1L<<(6 + offset)))) == 0)
+		                move = new Move((colour == COLOR_WHITE) ? 60 : 4, 
+		                		(colour == COLOR_WHITE) ? 62 : 6);
 	        
 	        // queen side castling
-        	if(game.qSideCastling[colour])
+        	if(game.getPlayer(colour).isqSideCastling())
 		        if (((1L<<(CASTL_BR_R + offset)) & rookBB) != 0)
 		            if ((OCCUPIED & ((1L<<1)|(1L<<2)|(1L<<3))) == 0)
-		                list += (colour == 0) ? "7472" : "0402"; // king and rook moves
+			            move = new Move((colour == COLOR_WHITE) ? 60 : 4, 
+			            		(colour == COLOR_WHITE) ? 58 : 2);
         }
-        return list;
+        return move;
     }
 	
 	public void pawnPromoAndCastling(Move selectedMove) {
@@ -301,24 +340,25 @@ public class MoveGenerator implements Vals {
 //		PieceGui movedGuiPiece = game.getBoard().getGuiPiece(posOfMovedPiece);
 		BB moveBits = new BB(1L<<posOfMovedPiece, game.getPlayerTurn());
 		if(Character.toUpperCase(typeToMove) == 'P' && 
-				(moveBits.getBits() & MoveGenerator.rankMask[(game.getPlayerTurn() * 7)]) != 0L)
+				(moveBits.getBits() & rankMask[(game.getPlayerTurn() * 7)]) != 0L)
 			promotePawn(posOfMovedPiece, game.getPlayerTurn());
 		// if moved piece is a king, negate both castling possibilities
 		if(Character.toUpperCase(typeToMove) == 'K') {
-			game.kSideCastling[game.getPlayerTurn()] = game.qSideCastling[game.getPlayerTurn()] = false;
+			game.getPlayer(game.getPlayerTurn()).setkSideCastling(false);
+			game.getPlayer(game.getPlayerTurn()).setqSideCastling(false);
 			int offset = (game.getPlayerTurn() == 0) ? 56 : 0;
 			// if king move was a castling, also move the corresponding rook
 			if(selectedMove.equals(new Move(4 + offset, 6 + offset)))
-				gameBB.movePiece(new Move(7 + offset, 5 + offset));
+				game.movePiece(new Move(7 + offset, 5 + offset));
 			else if(selectedMove.equals(new Move(4 + offset, 2 + offset)))
-				gameBB.movePiece(new Move(0 + offset, 3 + offset));
+				game.movePiece(new Move(0 + offset, 3 + offset));
 		}			
 		// if moved piece is a rook, negate corresponding side castling possibility
 		if(Character.toUpperCase(typeToMove) == 'R')
 			if(posOfMovedPiece == 0 || posOfMovedPiece == 56) // if left side of board
-				game.qSideCastling[game.getPlayerTurn()] = false;
+				game.getPlayer(game.getPlayerTurn()).setqSideCastling(false);
 			else if(posOfMovedPiece == 7 || posOfMovedPiece == 63) // if right side of board
-				game.kSideCastling[game.getPlayerTurn()] = false;
+				game.getPlayer(game.getPlayerTurn()).setkSideCastling(false);
 	}
 
 	public void promotePawn(int pos, int colour) {	
@@ -332,6 +372,9 @@ public class MoveGenerator implements Vals {
                 JOptionPane.YES_NO_OPTION, null, choices, choices[1]);
 				final JDialog dialog = new JDialog(new JFrame(), "Click a button", true);
 				dialog.setContentPane(optionPane);
+				// pop up dialog in the middle of the board
+				dialog.setLocation(BOARD_WIDTH/2 - dialog.getWidth(), 
+									BOARD_HEIGHT/2 - dialog.getHeight());
 				dialog.setDefaultCloseOperation(
 				    JDialog.DO_NOTHING_ON_CLOSE);
 				dialog.addWindowListener(new WindowAdapter() {
@@ -364,7 +407,7 @@ public class MoveGenerator implements Vals {
 				break;		
 		}
 		// recreate and reposition all gui pieces
-		game.getBoard().setupGuiPieceArray();
+//		game.getBoard().setupGuiPieceArray(true);
 	}
 	
 	public void updateBBStates() {
@@ -374,11 +417,12 @@ public class MoveGenerator implements Vals {
 	}
 
 	// get possible moves for current player's piece at position start
-	public BB possibleMoves(int colour, int start, Move history) {	
+	public BB possibleMoves(int colour, int pos, Move history) {	
 		long moveBits = 0L;
-		char pieceType = gameBB.getArraySquare(start);
+		char pieceType = gameBB.getArraySquare(pos);
 		// test if trying to move piece of wrong colour
-		if((Character.isLowerCase(pieceType)&&colour==0) || (Character.isUpperCase(pieceType)&&colour==1)) {
+		if((Character.isLowerCase(pieceType) && colour == 0) || 
+				(Character.isUpperCase(pieceType) && colour == 1)) {
 			game.getBoard().setDebugText("Cannot move opponent's piece!");
 			return null;
 		} else if(pieceType == ' ') {
@@ -386,11 +430,11 @@ public class MoveGenerator implements Vals {
 			return null;
 		}
 		switch(Character.toUpperCase(pieceType)) {
-			case 'R': moveBits = getHoriVertMoves(start, colour, gameBB); break;
-			case 'B': moveBits = getDiagAntiDiagMoves(start, colour, gameBB); break;
-			case 'N': moveBits = getKnightMoves(start, colour); break;
-			case 'Q': moveBits = getQueenMoves(colour, gameBB); break;
-			case 'P': moveBits = getPawnMoves(history, start, colour, false, gameBB); break;
+			case 'R': moveBits = getHoriVertMoves(pos, colour, gameBB); break;
+			case 'B': moveBits = getDiagAntiDiagMoves(pos, colour, gameBB); break;
+			case 'N': moveBits = getKnightMoves(pos, colour); break;
+			case 'Q': moveBits = getQueenMoves(pos, colour, gameBB); break;
+			case 'P': moveBits = getPawnMoves(history, pos, colour, false, gameBB); break;
 			case 'K': moveBits = getKingMoves(history, colour, gameBB); break;
 			default: moveBits = 0L;
 		}
@@ -399,19 +443,18 @@ public class MoveGenerator implements Vals {
 		moveBits &= ~gameBB.getColourPieces(colour);
 		
 		if(moveBits == 0L) { // if moveBits is all 0's
-			game.getBoard().setDebugText(pieceType + " cannot move!");
+			game.getBoard().setDebugText(game.getLongName(pieceType) + " cannot move!");
 			
 		// routine for testing if possible moves can resolve king in check	
-//		} else if(game.getActivePlayer().isCheck()) { // if king is in check
-//			if(testCheck(colour, moveBits)) return null;
-		}
+		} else if(game.getActivePlayer().isCheck() && testCheck(colour, moveBits))
+			moveBits = 0L;
+
 		return new BB(moveBits, colour);
 	}
 	
 	private int verifyPosition(int start) {
 		int pos = (start < 0) ? 0 : start;
-		pos = (pos > 63) ? 63 : pos;
-		return pos;
+		return (pos > 63) ? 63 : pos;
 	}
 
 	public static Move makeMove(long moveBits, int start) {
@@ -435,19 +478,4 @@ public class MoveGenerator implements Vals {
 	public static List<Move> bitsAsMoveList(BB moveBitsBB, int start) {	
 		return makeMoveList(moveBitsBB.getBits(), start);
 	} 
-	
-	// tests if bitboard of moves and bits of opponent piece checking king, will be zero.
-	// if zero, king is still in check and true is returned. otherwise return false (no longer in check)
-	public boolean testCheck(int colour, long moveBits) {
-		long culpritBits = 0L; // bitboard for opponent type checking's bits
-		char oppTypeChecking = pieceTypeChecking(colour, gameBB);
-		if(oppTypeChecking > 0) { // if it's 0, then pieceTypeChecking() didn't find the culprit type
-			culpritBits |= gameBB.getBB(oppTypeChecking).getBits(); // set to opponent type checking's bits
-			if((moveBits & culpritBits) == 0L) {
-				game.getBoard().setDebugText("King still in check!");
-				return true;					
-			}
-		}
-		return false;
-	}
 }

@@ -1,15 +1,31 @@
 package interfaces;
 
+import gui.PieceGui;
+
+import java.awt.Point;
+import java.util.HashMap;
+
 public interface Declarations {
 	// white units					king		knight		bishop	queen		pawn		rook
-	public static final String UNITS[] = {"archangel", "cavalry", "druid", "nagaqueen", "peasant", "titan",
+	public static final String[] UNITS = {"archangel", "cavalry", "druid", "nagaqueen", "peasant", "titan",
 	// black units					king		knight			bishop		queen		pawn		rook		
 									"archdevil", "blackknight", "powerlich", "medusa", "skeleton", "blackdragon"};
 	// animation states
-	public static final String STATES[] = {"idle", "walk", "attack", "death"};	
+	public static final String[] STATES = {"idle", "walk", "attack", "death"};	
 	public static final int STATE_IDLE = 0, STATE_WALK = 1, STATE_ATTACK = 2, STATE_DEATH = 3;
 	
-	public static final String IMG_PATH = "C:/Users/Mikkel/Java/_projects/sjakk/img/";
+	// x,y start positions for state anims for each unit: unitAnimStartXY[state]
+	// whites then blacks
+	public static final int[][] UNIT_ANIM_STARTX = {{-10,0,8,-10,10,10	,0,-5,0,0,0,-5},  	// idle
+												  	{-20,0,0,-30,0,0	,-15,-5,0,0,0,-50},  	// walk
+												  	{-20,0,0,-30,0,0	,-15,-5,0,0,0,-50},  	// attack
+												  	{-20,0,0,-30,0,0	,-15,-5,0,0,0,-50}}; 	// death
+	
+	public static final int[][] UNIT_ANIM_STARTY = {{-10,0,0,-7,0,-10	,-18,0,0,0,0,-12},
+		  										  	{-30,0,0,-15,0,-10	,-22,0,0,0,0,-36},
+		  										  	{-30,0,0,-15,0,-10	,-22,0,0,0,0,-36},
+		  										  	{-30,0,0,-15,0,-10	,-22,0,0,0,0,-36}};
+	
 	public static final String IMG_PATH_GITHUB = "C:/Users/Mikkel/Documents/GitHub/HeroesChess/img/";
 	
 	// --- GUI dimensions ---
