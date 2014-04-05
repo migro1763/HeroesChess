@@ -11,9 +11,9 @@ public class Game implements Runnable, Vals {
 	private MoveGenerator moveGen;
 	private int playerTurn = COLOR_WHITE; // who's turn it is
 	private Player blackPlayer = null, whitePlayer = null, activePlayer = null;
-	private boolean hasCheckTestedGameLoop = false;
-	private boolean dragPiecePossibleMovesDone = false;
-	long testTime = 0L;
+	private Move pawnHistory = null;
+	private int enPassantPos = -1;
+	private int gameState = playerTurn;
 	
 	public Game() {
 		btb = new BitBoard(this);
@@ -33,8 +33,6 @@ public class Game implements Runnable, Vals {
 	}
 	
 	public void startGame() {
-		Move history = null;
-		
 		// check if all players are ready
 		System.out.println("ChessGame: waiting for players");
 		while (blackPlayer == null || whitePlayer == null) {
@@ -47,98 +45,114 @@ public class Game implements Runnable, Vals {
 		
 		// start game flow loop
 		boolean didMove = false;
-		testTime = System.currentTimeMillis();
 		while(!isGameOver()) {
-			didMove = gameLoop(history);
+			didMove = gameLoop();
+			threadPause(50);
 			changePlayerTurnAfterMove(didMove);
+//			Speak.say("mem usage: " + ((HeroesChess.startMem - HeroesChess.runtime.freeMemory()) >> 10) + " kb", true);
 		}
+		setGameState(playerTurn == COLOR_WHITE ? BLACK_WON : WHITE_WON);
+		board.playKingDeath(playerTurn);
 	}
 
-	public boolean gameLoop(Move history) {
+	public boolean gameLoop() {
 		Move selectedMove = null;
-		boolean hasMoved = false;
-		
+		boolean hasMoved = false;		
 		// update OCCUPIED and EMPTY in the MoveGenerator object
 		moveGen.updateBBStates();
 		// repaint graphics
 		board.repaint();
 		
-		// generate bitboard of moves in Moves->possibleMoves(), and set
-		// gui board's dragpiece's moveBits to it.
-		BB dragPieceMoveBits = new BB();
-		PieceGui dragPiece = board.getDragPiece();
-		
-		// do this block if player has picked and is holding a piece
+		// do this block if player has picked and dropped a piece thus making a move
 		// ---------------------------------------------------------
-		if(dragPiece != null) {
-			dragPieceMoveBits = dragPiece.getMoveBits();
-
-			if(activePlayer.getCurrentMove() != null) {
-				long moveBits = 1L<<activePlayer.getCurrentMove().getTrg();
-				
-				if((dragPieceMoveBits.getBits() & moveBits) != 0L) {
-			    	selectedMove = activePlayer.getMove();
-			    	// move the selected piece by selected move
-		    		movePiece(selectedMove);		
-		    		// snap the moved piece to its nearest square
-		    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
-					// set history to last move
-			    	history = selectedMove;
-			    	// finish move setup for active player
-			    	activePlayer.moveSuccessfullyExecuted(selectedMove);
-					// do pawn promotion and finish castling setup (move rook etc.)
-					moveGen.pawnPromoAndCastling(selectedMove);
-			    	// recreate and reposition all gui pieces, according to latest bitboards
-					board.setupGuiPieceArray();
-					// repaint graphics
-//			    	board.repaint();
-				    hasMoved = true;
-				} else {
-					// -1 indicates no move was done, possibly due to wrong square selected or
-					// selected square's piece cannot move at all
-					hasMoved = false;
-				}			
-			}
-		}
+		if(activePlayer.getCurrentMove() != null && board.getDragPiece() != null) {
+			long moveTargetBits = 1L<<activePlayer.getCurrentMove().getTrg();
+			PieceGui dragPiece = board.getDragPiece();
+			// test if the square dragPiece has been dropped into is part of valid moves
+			if((dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L) {
+		    	selectedMove = activePlayer.getMove();
+		    	// move the selected piece by selected move
+		    	movePiece(selectedMove);		
+	    		// snap the moved piece to its nearest square
+	    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
+		    	// finish move setup for active player
+		    	activePlayer.moveSuccessfullyExecuted(selectedMove);
+				// do pawn promotion and finish castling setup (move rook etc.)
+				moveGen.pawnPromotion(selectedMove);
+				// repaint graphics
+				board.repaint();
+			    hasMoved = true;
+			} 
+		}			
 		// -----------------------------------------
 		// end of block when player is holding piece
 		
 		return hasMoved;
 	}
-	
-	public boolean isHasCheckTestedGameLoop() {
-		return hasCheckTestedGameLoop;
-	}
-
-	public void setHasCheckTestedGameLoop(boolean hasGameLoopCheckTested) {
-		this.hasCheckTestedGameLoop = hasGameLoopCheckTested;
-	}
 
 	public void movePiece(Move move) {
+		char type = btb.getArraySquare(move.getSrc());
         char oppType = btb.getArraySquare(move.getTrg());
+        int posOfMovedPiece = move.getTrg();
+        int attackedPiecePos = posOfMovedPiece;
+        
+        // en passant attack
+        // if enPassantPos is not -1, that means an en passant attack has been made
+        if(enPassantPos >= 0 && Math.abs(move.getSrc() - enPassantPos) == 1) {
+        	 oppType = btb.getArraySquare(enPassantPos);
+        	 attackedPiecePos = enPassantPos;
+        	 board.setDebugText("en passant!");
+        }       
         
         // if target square is not empty = attack!
         if(oppType != ' ') {
         	// add captured piece to list of captured pieces
-        	PieceGui deathPiece = new PieceGui(board.getGuiPiece(move.getTrg()));
+        	PieceGui deathPiece = new PieceGui(board.getGuiPiece(attackedPiecePos));
         	board.addToCapturedGuiPieces(deathPiece);
         	// set position bit of oppType's bitboard to 0
-        	btb.setBB(oppType, move.getTrg(), 0);
-        	// set the guiPiece in the guiPiece array to null
-        	board.setGuiPiece(move.getTrg(), null);
+        	btb.setBB(oppType, attackedPiecePos, 0);
         	// setup and start attack animation
         	board.playAttackAnim(move, board.getGuiPiece(move.getSrc()), deathPiece);
         }
-		btb.movePieceBits(move);		
+		btb.movePieceBits(move);
+		
+		// store pawn double push to history for en passant next turn
+		if(Character.toUpperCase(type) == 'P' && 
+				Math.abs(move.getTrg() - move.getSrc()) == 16) // double push
+			pawnHistory = move;
+		else
+			pawnHistory = null;
+		
+		// if moved piece is a king, negate both castling possibilities
+		if(Character.toUpperCase(type) == 'K') {
+			activePlayer.setkSideCastling(false);
+			activePlayer.setqSideCastling(false);
+			
+			// test if move was castling and if so, move corresponding rook
+			if(move.equals(K_CASTLING_MOVE[playerTurn]) | move.equals(Q_CASTLING_MOVE[playerTurn]))
+				moveGen.moveRookInCastling(move);
+		}			
+		// if moved piece is a rook, negate corresponding side castling possibility
+		if(Character.toUpperCase(type) == 'R')
+			if(posOfMovedPiece == 0 || posOfMovedPiece == 56) // if left side of board
+				activePlayer.setqSideCastling(false);
+			else if(posOfMovedPiece == 7 || posOfMovedPiece == 63) // if right side of board
+				activePlayer.setkSideCastling(false);
+		
+		if(enPassantPos < 0)
+			attackedPiecePos = -1;
+//		board.updateGuiPieces(move, attackedPiecePos, false);
+		enPassantPos = -1; // reset position of en passant attackee
+		board.updateGuiPieces(move, attackedPiecePos);
 	}
 
 	private void changePlayerTurnAfterMove(boolean didMove) {
 		if(didMove) {
-			threadPause(50);
 			setPlayerTurn(1-playerTurn);
-			moveGen.isInCheck(playerTurn);
-			hasCheckTestedGameLoop = false;
-			dragPiecePossibleMovesDone = false;
+			// test for check
+			activePlayer.setCheck(moveGen.isInCheck(playerTurn));
+			// test for check mate
+			activePlayer.setCheckMate(moveGen.testForCheckMate(playerTurn));
 		}		
 	}
 	
@@ -148,8 +162,17 @@ public class Game implements Runnable, Vals {
 
 	public void setPlayerTurn(int playerTurn) {
 		this.playerTurn = playerTurn;
+		setGameState(playerTurn);
 		setActivePlayer((this.playerTurn == COLOR_WHITE) ? whitePlayer : blackPlayer);
 		activePlayer.setDragPiecesEnabled(true);
+	}
+	
+	public int getGameState() {
+		return gameState;
+	}
+	
+	public void setGameState(int gameState) {
+		this.gameState = gameState;
 	}
 	
 	public Player getActivePlayer() {
@@ -162,7 +185,9 @@ public class Game implements Runnable, Vals {
 
 	public void setActivePlayer(Player activePlayer) {
 		this.activePlayer = activePlayer;
-		board.setDebugText("active player changed to: " + this.activePlayer);
+		board.setDebugText("active player set to: " + this.activePlayer + 
+				", kCastling: " + this.activePlayer.iskSideCastling() +
+				", qCastling: " + this.activePlayer.isqSideCastling());
 	}
 	
 	public void setPlayer(int pieceColor, Player playerHandler) {
@@ -174,9 +199,23 @@ public class Game implements Runnable, Vals {
 		}
 	}
 	
+	public Move getPawnHistory() {
+		return pawnHistory;
+	}
+
+	public void setPawnHistory(Move pawnHistory) {
+		this.pawnHistory = pawnHistory;
+	}
+	
+
+	public void setEnPassantPos(int pos) {
+		enPassantPos = pos;
+	}
+
 	private boolean isGameOver() {
-		// TODO: return whether game is over
-		return false;
+		if(activePlayer.isCheckMate())
+			board.setDebugText(activePlayer + " is check mate!");
+		return activePlayer.isCheckMate();
 	}
 	
     public static String getLongName(char type, int colour) {
@@ -204,13 +243,17 @@ public class Game implements Runnable, Vals {
     	}
     }
     
+    public static int getTypeColour(char type) {
+    	return Character.isUpperCase(type) ? COLOR_WHITE : COLOR_BLACK;
+    }
+    
     public static String getLongName(char type) {
     	int colour = (Character.isUpperCase(type)) ? 0 : 1;
     	return getLongName(type, colour);
     }
 	
 	public static String makeStdPos(int pos) {
-		return FILE_NAME[pos % 8] + (8-(pos / 8));
+		return FILE_NAME[BitBoard.getX(pos)] + (8-(BitBoard.getY(pos)));
 	}
 	
 	public BitBoard getBitBoard() {

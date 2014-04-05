@@ -5,11 +5,12 @@ import game.Speak;
 
 public abstract class Player {
 
-	protected boolean isCheck;
+	protected boolean isCheck, isCheckMate;
 	protected boolean dragPiecesEnabled;
-	protected boolean kSideCastling, qSideCastling;
+	protected boolean kSideCastling = true, qSideCastling = true;
 	protected Move lastMove, currentMove;
-	protected boolean isDebugging = false;
+	protected int promoteTo = 0; // for pawn promotion, 0=no promotion
+	// 1=queen, 2=knight, 3=rook, 4=bishop
 	
 	public abstract Move getMove();
 	
@@ -31,6 +32,14 @@ public abstract class Player {
 		this.isCheck = isCheck;
 	}
 	
+	public boolean isCheckMate() {
+		return isCheckMate;
+	}
+
+	public void setCheckMate(boolean isCheckMate) {
+		this.isCheckMate = isCheckMate;
+	}
+
 	public void swapCheck() {
 		isCheck = !isCheck;
 	}
@@ -51,14 +60,6 @@ public abstract class Player {
 		this.currentMove = currentMove;
 	}
 
-	public boolean isDebugging() {
-		return isDebugging;
-	}
-
-	public void setDebugging(boolean isDebugging) {
-		this.isDebugging = isDebugging;
-	}
-
 	public boolean iskSideCastling() {
 		return kSideCastling;
 	}
@@ -73,5 +74,13 @@ public abstract class Player {
 
 	public void setqSideCastling(boolean qSideCastling) {
 		this.qSideCastling = qSideCastling;
+	}
+
+	public int getPromoteTo() {
+		return promoteTo;
+	}
+
+	public void setPromoteTo(int promoteTo) {
+		this.promoteTo = promoteTo;
 	}
 }

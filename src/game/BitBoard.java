@@ -1,12 +1,22 @@
 package game;
 
+import interfaces.Vals;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 
 public class BitBoard {
 	
-	// variable declarations
-	private char[][] chessBoard = {
+	private final static char[][] chessBoard = {
+//        {' ',' ',' ',' ','k',' ',' ',' '}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
+//        {' ','P','P',' ',' ',' ','P','P'}, // ' 8',' 9','10','11','12','13','14','15'
+//        {' ',' ',' ',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
+//        {' ',' ',' ',' ',' ',' ',' ',' '}, // '24','25','26','27','28','29','30','31'
+//        {' ',' ',' ',' ',' ',' ',' ',' '}, // '32','33','34','35','36','37','38','39'
+//        {' ','N','B','Q',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
+//        {'P',' ','P','P','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
+//        {'R',' ',' ',' ','K',' ',' ','R'}  // '56','57','58','59','60','61','62','63'
+        
         {'r','n','b','q','k','b','n','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
         {'p','p','p','p','p','p','p','p'}, // ' 8',' 9','10','11','12','13','14','15'
         {' ',' ',' ',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
@@ -15,15 +25,6 @@ public class BitBoard {
         {' ',' ',' ',' ',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
         {'P','P','P','P','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
         {'R','N','B','Q','K','B','N','R'}  // '56','57','58','59','60','61','62','63'
-        
-//        {'r','n','b',' ',' ','b','n','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
-//        {'p','p','p','P','p','p','p','p'}, // ' 8',' 9','10','11','12','13','14','15'
-//        {' ',' ',' ',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
-//        {' ',' ',' ',' ',' ',' ',' ','k'}, // '24','25','26','27','28','29','30','31'
-//        {' ',' ',' ',' ',' ',' ',' ',' '}, // '32','33','34','35','36','37','38','39'
-//        {' ',' ',' ',' ',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
-//        {'P','P','P',' ','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
-//        {'R','N','B','Q','K',' ',' ','R'}  // '56','57','58','59','60','61','62','63'
 	};
 	
 	private BB wp = new BB(0L, 0);
@@ -38,63 +39,44 @@ public class BitBoard {
 	private BB bb = new BB(0L, 1);
 	private BB bq = new BB(0L, 1);
 	private BB bk = new BB(0L, 1);	
-	
-	private Game game;
-	// end variable declarations
-	
+		
 	public BitBoard(Game game) {
-		this.game = game;
 		initializeBoard();
 	}
 	
 	// cloning constructor
 	public BitBoard(BitBoard clone) {
-		this.game = clone.game;
-		this.wp = clone.wp;
-		this.wr = clone.wr;
-		this.wn = clone.wn;
-		this.wb = clone.wb;
-		this.wq = clone.wq;
-		this.wk = clone.wk;
-		this.bp = clone.bp;
-		this.br = clone.br;
-		this.bn = clone.bn;
-		this.bb = clone.bb;
-		this.bq = clone.bq;
-		this.bk = clone.bk;
-		this.chessBoard = clone.chessBoard;
+		this.wp = new BB(clone.wp);
+		this.wr = new BB(clone.wr);
+		this.wn = new BB(clone.wn);
+		this.wb = new BB(clone.wb);
+		this.wq = new BB(clone.wq);
+		this.wk = new BB(clone.wk);
+		this.bp = new BB(clone.bp);
+		this.br = new BB(clone.br);
+		this.bn = new BB(clone.bn);
+		this.bb = new BB(clone.bb);
+		this.bq = new BB(clone.bq);
+		this.bk = new BB(clone.bk);
 	}
 	
 	// defines bitboards for all piece types and for both colours
     public void initializeBoard() {
-        for (int i=0; i<64; i++) {
-            switch (chessBoard[i/8][i%8]) {
-                case 'P': wp.addBits(1L << i);
-                    break;
-                case 'N': wn.addBits(1L << i);
-                    break;
-                case 'B': wb.addBits(1L << i);
-                    break;
-                case 'R': wr.addBits(1L << i);
-                    break;
-                case 'Q': wq.addBits(1L << i);
-                    break;
-                case 'K': wk.addBits(1L << i);
-                    break;
-                case 'p': bp.addBits(1L << i);
-                    break;
-                case 'n': bn.addBits(1L << i);
-                    break;
-                case 'b': bb.addBits(1L << i);
-                    break;
-                case 'r': br.addBits(1L << i);
-                    break;
-                case 'q': bq.addBits(1L << i);
-                    break;
-                case 'k': bk.addBits(1L << i);
-                    break;
+        for (int i = 0; i < 64; i++)
+            switch (chessBoard[getY(i)][getX(i)]) {
+                case 'P': wp.addBits(1L << i); break;
+                case 'N': wn.addBits(1L << i); break; 
+                case 'B': wb.addBits(1L << i); break;
+                case 'R': wr.addBits(1L << i); break;
+                case 'Q': wq.addBits(1L << i); break;
+                case 'K': wk.addBits(1L << i); break;
+                case 'p': bp.addBits(1L << i); break;
+                case 'n': bn.addBits(1L << i); break;
+                case 'b': bb.addBits(1L << i); break;
+                case 'r': br.addBits(1L << i); break;
+                case 'q': bq.addBits(1L << i); break;
+                case 'k': bk.addBits(1L << i); break;
             }
-        }
     }
     
     public long getOccupied() {
@@ -116,13 +98,10 @@ public class BitBoard {
 		return ~getOccupied(); 
 	}
     
-    public void drawArray(long bitboard) {
+    public static void drawArray(long bitboard) {
     	char[][] newBoard = new char[8][8];
-    	if(bitboard == -1L)
-    		newBoard = getArray();
-    	else
-	        for (int i=0; i<64; i++)
-	        	newBoard[i/8][i%8] = (BigInteger.valueOf(bitboard).testBit(i)) ? '1' : ' ';
+        for (int i = 0; i < 64; i++)
+        	newBoard[getY(i)][getX(i)] = (BigInteger.valueOf(bitboard).testBit(i)) ? '1' : ' ';
         Speak.say("      ______________________", true);
         for (int i=0; i<8; i++)   	
             Speak.say((8-i) + "|" + i*8 + ((i<2) ? "  " : " ") + Arrays.toString(newBoard[i]), true);
@@ -131,19 +110,19 @@ public class BitBoard {
         Speak.say("      a  b  c  d  e  f  g  h", true);
     }
     
-    public void drawArray(long bitboard, String label) {
+    public static void drawArray(long bitboard, String label) {
     	Speak.say(label);
     	drawArray(bitboard);
     }
     
-    public void drawArray() { 	
+    public static void drawArray() { 	
     	drawArray(-1L); // call drawArray(bitboard) with all bits filled (= -1)
     }
     
     public char[][] getArray() {
         char newBoard[][] = new char[8][8];     
-        for (int i=0; i<64; i++)
-        	newBoard[i/8][i%8] = getArraySquare(i);
+        for (int i = 0; i < 64; i++)
+        	newBoard[getY(i)][getX(i)] = getArraySquare(i);
     	return newBoard;
     }
     
@@ -178,19 +157,6 @@ public class BitBoard {
     }
     
     // *** OBSOLETE METHODS END ***
-    
-    public static String getLongName(char type) {
-    	String colour = (Character.isUpperCase(type)) ? "White " : "Black ";
-    	switch(Character.toUpperCase(type)) {
-    		case 'P':	return colour + "pawn";
-    		case 'R':	return colour + "rook";
-    		case 'N':	return colour + "knight";
-    		case 'B':	return colour + "bishop";
-    		case 'Q':	return colour + "queen";
-    		case 'K':	return colour + "king";
-    		default:	return "";
-    	}
-    }
  		
 	public void movePieceBits(Move move) {
 		BB bitboard = getBB(getArraySquare(move.getSrc()));
@@ -227,6 +193,16 @@ public class BitBoard {
 		return positions;
 	}
 	
+	// return file (x) of position
+	public static int getX(int pos) {
+		return pos & 7;
+	}
+	
+	// return rank (y) of position
+	public static int getY(int pos) {
+		return pos >> 3;
+	}
+	
 	public BB getBB(char type) {
 		switch(type) {
 			case 'P':	return wp;
@@ -243,6 +219,11 @@ public class BitBoard {
 			case 'k':	return bk;
 			default:	return null;
 		}
+	}
+	
+	public BB getBB(char type, int colour) {
+		return getBB(colour == Vals.COLOR_WHITE ? 
+				Character.toUpperCase(type) : Character.toLowerCase(type));
 	}
 	
 	public void setBB(char type, int pos, int bit) {

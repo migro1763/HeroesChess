@@ -54,7 +54,6 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		
 		int mouseOverPos = getMouseOverPos(x, y);
 		if(mouseOverPos >= 0) {
-			activePlayer.setDebugging(false);
 			PieceGui guiPieceInFocus = board.getGuiPiece(mouseOverPos);
 			if(guiPieceInFocus != null) {
 				if(guiPieceInFocus.getColour() == playerTurn) {
@@ -67,9 +66,9 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 					guiPieceInFocus.getAnim(STATE_WALK).setSpeed(150);
 					guiPieceInFocus.getAnim(STATE_WALK).play();
 					
-					activePlayer.setCheck(board.getGame().getMoveGen().isInCheck(playerTurn));
 					BB dragPieceMoveBits = board.getGame().getMoveGen().possibleMoves(
-							playerTurn, guiPieceInFocus.getPos(), board.getGame().getPlayer(1-playerTurn).getLastMove());
+							playerTurn, guiPieceInFocus.getPos(), board.getGame().getPawnHistory());
+
 					guiPieceInFocus.setMoveBits(dragPieceMoveBits);
 					board.setDragPiece(guiPieceInFocus);
 				}
@@ -89,22 +88,20 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 			dragPiece.setX(x);
 			dragPiece.setY(y);
 		} else {
-			// moves the entire game window if not dragging a gui piece
-	        frame.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y);
+			// moves the entire game window if not dragging a gui piece. y - 23 (menubar height)
+	        frame.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y - 23); 
 		}
 	}
 	
 	@Override
 	public void mouseReleased(MouseEvent evt) {
 		mouseDownCompCoords = null;
-		Game.threadPause(20);
+//		Game.threadPause(20);
 		if(board.getDragPiece() != null){
-			int x = evt.getPoint().x - dragOffsetX;
-			int y = evt.getPoint().y - dragOffsetY;
-			int pos = ChessBoardGui.getPosFromXY(x, y);
 			// set game piece to the new location if possible
 			PieceGui dragPiece = board.getDragPiece();
 			if(dragPiece != null) {
+				int pos = ChessBoardGui.getPosFromXY(evt.getPoint().x, evt.getPoint().y);
 				board.setNewPieceLocation(dragPiece, pos);
 		    	dragPiece.setState(STATE_IDLE);
 		    	dragPiece.getAnim(STATE_IDLE).resetIdlePause();

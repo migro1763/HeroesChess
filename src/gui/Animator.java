@@ -25,6 +25,7 @@ public class Animator {
         unit = null;
         variance = new Random().nextInt(10);
 		setRandomIdlePauseDuration();
+		resetIdlePause();
     }
 
     public void setSpeed(long speed){
@@ -117,10 +118,9 @@ public class Animator {
 	
 	public void setRandomIdlePauseDuration() {
 		idlePauseDuration = (new Random().nextInt(20) + 10) * 500;
-		idlePause = idlePauseDuration;
 	}
 
-    public void play() {
+	public void play() {
         running = true;
         idle = false;
         previousTime = 0;

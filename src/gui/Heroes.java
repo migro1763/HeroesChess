@@ -92,7 +92,6 @@ public class Heroes extends JFrame implements Declarations, KeyListener {
 		System.out.println("Current unit: " + currentUnit);
 
 		if(currentUnit != null) {
-			System.out.println("Frames: " + currentUnit.frames);
 			for (int i = 0; i < currentUnit.frames; i++) {
 				sprites.add(ss.grabSprite(currentUnit.getFrm(i).x, currentUnit.getFrm(i).y,
 											currentUnit.getFrm(i).w, currentUnit.getFrm(i).h));

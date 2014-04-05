@@ -14,6 +14,12 @@ public class BB {
 		this.colour = 0;
 	}
 	
+	// cloning constructor
+	public BB(BB clone) {
+		this.bits = clone.bits;
+		this.colour = clone.colour;
+	}
+	
 	public void addBits(long bits) { // or
 		this.bits |= bits;
 	}

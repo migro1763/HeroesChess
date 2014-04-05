@@ -2,12 +2,11 @@ package pieces;
 
 public abstract class Movable {
 	
-	protected int colour, pos, id;
+	protected int colour, pos;
 	
-	public Movable(int colour, int pos, int id) {
+	public Movable(int colour, int pos) {
 		this.colour = colour;
 		this.pos = pos;
-		this.id = id;
 	}
 	
 	public int getColour() {
@@ -32,13 +31,5 @@ public abstract class Movable {
 
 	public void setPos(int pos) {
 		this.pos = pos;
-	}
-
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
 	}
 }

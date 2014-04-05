@@ -49,4 +49,8 @@ public class Move implements Vals {
 	public String toString() {
 		return "" + String.format("%02d", src) + String.format("%02d", trg);
 	}
+	
+	public boolean equals(Move move) {
+		return (this.src == move.getSrc() && this.trg == move.getTrg());
+	}
 }

@@ -15,10 +15,9 @@ import players.Player;
 //import net.XmlRpcPlayerHandler;
 
 public class HeroesChess implements Vals {
-
-	private static final int PLAYER_OPTION_HUMAN = 0;
-	private static final int PLAYER_OPTION_AI = 1;
-	private static final int PLAYER_OPTION_NETWORK = 2;
+	
+	public static Runtime runtime = Runtime.getRuntime();
+//	public static long startMem = runtime.freeMemory();
 
 	public static void main(String[] args) throws IOException {
 
@@ -45,11 +44,12 @@ public class HeroesChess implements Vals {
 //		}
 
 		// create the game logic
+		
 		Game game = new Game();
 
 		// assign white and black player
-		Player playerWhite = getPlayerHandler(whitePlayerOption, game, gameIdOnServer, gamePassword, "White player");
-		Player playerBlack = getPlayerHandler(blackPlayerOption, game, gameIdOnServer, gamePassword, "Black player");
+		Player playerWhite = getPlayerHandler(whitePlayerOption, game, gameIdOnServer, gamePassword, "Mikkel");
+		Player playerBlack = getPlayerHandler(blackPlayerOption, game, gameIdOnServer, gamePassword, "Ask");
 		
 		// if white and black are the same (e.g. both Swing or both Console)
 		// then do not create a new player instance, but reuse the already

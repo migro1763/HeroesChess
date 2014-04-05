@@ -10,8 +10,8 @@ public class Piece extends Movable {
 	protected char type;
 	private BB moveBits;
 
-	public Piece(int colour, char type, int pos, int id) {
-		super(colour, pos, id);
+	public Piece(int colour, char type, int pos) {
+		super(colour, pos);
 		this.type = type;
 		this.moveBits = new BB(0L, colour);
 	}

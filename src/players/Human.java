@@ -32,6 +32,6 @@ public class Human extends Player {
 	
 	@Override
 	public String toString() {
-		return name + ", is in check: " + isCheck;
+		return name;
 	}
 }
