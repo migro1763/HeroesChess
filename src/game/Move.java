@@ -6,19 +6,39 @@ public class Move implements Vals {
 	
 	// source and target positions, 0-63
 	private int src, trg;
+	private int colour;
+	
+	public Move(int src, int trg, int colour) {
+		this.src = src;
+		this.trg = trg;
+		this.colour = colour;
+	}
 	
 	public Move(int src, int trg) {
 		this.src = src;
 		this.trg = trg;
+		this.colour = COLOR_NEUTRAL;
 	}
 	
 	public Move() {
 		this.src = 0;
 		this.trg = 0;
+		this.colour = COLOR_NEUTRAL;
+	}
+	
+	// cloning constructor
+	public Move(Move clone) {
+		this.src = clone.src;
+		this.trg = clone.trg;
+		this.colour = clone.colour;
 	}
 
 	public int getSrc() {
 		return src;
+	}
+	
+	public String getStringSrc() {
+		return String.format("%02d", src);
 	}
 
 	public void setSrc(int src) {
@@ -28,26 +48,40 @@ public class Move implements Vals {
 	public int getTrg() {
 		return trg;
 	}
+	
+	public String getStringTrg() {
+		return String.format("%02d", trg);
+	}
 
 	public void setTrg(int trg) {
 		this.trg = trg;
 	}
 	
-	public String makeStdMove() {
-		return makeStdMove(src/8, src%8, trg/8, trg%8);
+	public static Move makeMoveFromString(String moveString) {
+		int src = Integer.parseInt(moveString.substring(0, 2));
+		int trg = Integer.parseInt(moveString.substring(2, 4));
+		return new Move(src, trg);
 	}
 	
-	public static String makeStdMove(int src, int trg) {
-		return ("" + FILE_NAME[src/8] + (8-src%8) + "->" + FILE_NAME[trg/8] + (8-trg%8));
+	public int getColour() {
+		return colour;
 	}
+
+	public void setColour(int colour) {
+		this.colour = colour;
+	}
+
+//	public String makeStdMove() {
+//		return makeStdMove(src, trg);
+//	}
 	
-	public static String makeStdMove(int x1, int y1, int x2, int y2) {
-		return ("" + FILE_NAME[y1] + (8-x1) + "->" + FILE_NAME[y2] + (8-x2));
-	}
+//	public static String makeStdMove(int src, int trg) {
+//		return ("" + FILE_NAME[src>>3] + (8-src&7) + "->" + FILE_NAME[trg>>3] + (8-trg&7));
+//	}
 	
 	@Override
 	public String toString() {
-		return "" + String.format("%02d", src) + String.format("%02d", trg);
+		return getStringSrc() + getStringTrg();
 	}
 	
 	public boolean equals(Move move) {

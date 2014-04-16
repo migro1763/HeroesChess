@@ -1,8 +1,6 @@
 package gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
@@ -13,38 +11,36 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 
 import pieces.Piece;
 import game.BitBoard;
 import game.Game;
 import game.Move;
-import game.Speak;
-import interfaces.Declarations;
+import interfaces.GuiParams;
 import interfaces.Vals;
 
-public class ChessBoardGui extends JPanel implements Declarations, Vals {
+public class ChessBoardGui extends JPanel implements GuiParams, Vals {
+	
+	private static final long serialVersionUID = 1L;
 	
 	private static boolean DEBUG = true;
 	private static boolean SHOW_MOVES = true;
 	private static boolean SHOW_LAST_MOVE = true;
 	private static boolean SHOW_CURRENT_SQUARE = true;
 	
-	private static final long serialVersionUID = 1L;
 	private Image imgBackground;
-	private JLabel lblGameState, debugTextLabel;
-	private HtmlLabel debugText;
+	private JLabel lblGameState;
+	private ScrollLabel debugLabel, historyLabel;
+	private HtmlLabel debugText, historyText;
 
 	private Game game;
 	private HashMap<String, PieceGui> pieceGuisBuffer = new HashMap<String, PieceGui>();
@@ -65,9 +61,29 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
     public int whichState = 0;
     
     public ChessBoardGui(Game game) {
+		// set game object as the created chess game parameter
+		this.game = game;
+		// load graphics into buffers/memory
+		loadGraphics();	
+		// create application frame
+		HeroesFrame frame = new HeroesFrame(imgBackground.getWidth(null), 
+				imgBackground.getHeight(null)+23); // menubar height = 23
+		// set up all gui elements
+		initGameGui(frame);
+		// configure game frame	
+		frame.display(this);	
 		
-    	this.setLayout(new BorderLayout());
+		// setup 64-size array of gui pieces, one for each board square
+		setupGuiPieceArray();
 		
+		// add listeners to enable drag and drop pieces
+		PiecesDragAndDropListener listener = new PiecesDragAndDropListener(this, frame);
+		// add listeners to JPanel (this)
+		this.addMouseListener(listener);
+		this.addMouseMotionListener(listener); 	
+	}
+    
+    private void loadGraphics() {
     	// load background image
 		try {
 			this.imgBackground = new ImageIcon(ImageIO.read(
@@ -75,46 +91,20 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		} catch (IOException exc) {
 			System.out.println("image background path illegal!");
 		}
-		
-		// set game object as the created chess game parameter
-		this.game = game;
-		
-		// factor to scale gui pieces to fit board graphics
+    	// factor to scale gui pieces to fit board graphics
 		getScaleAdd = ((double)GUI_PIECE_SCALE / 12.0) - 1.0;
 
 		// load animation graphics and text file of all sprites
 		initAnimationData();
 		
 		// load piece gui graphics into hashmap buffer
-		loadPieceGuisIntoBuffer();
-		
-		// setup 64-size array of gui pieces, one for each board square
-		setupGuiPieceArray();
-	
-		// label to display game state
-		String labelText = getGameStateAsText();
-		lblGameState = new JLabel(labelText);
-		lblGameState.setBounds(10, BOARD_HEIGHT>>1, 250, 100);
-		lblGameState.setForeground(Color.WHITE);
-		// add JLabel to JPanel (this)
-		this.add(lblGameState);
-		
-		// label to display debug text, via setDebugText(String text)
-		debugText = new HtmlLabel();
-		debugTextLabel = new JLabel(debugText.getText(), SwingConstants.LEADING);
-		debugTextLabel.setBounds(5, 5, 200, 120);
-		debugTextLabel.setPreferredSize(new Dimension(200, 120));
-		debugTextLabel.setForeground(Color.YELLOW);
-		debugTextLabel.setVerticalAlignment(JLabel.BOTTOM);
-		debugTextLabel.setVerticalTextPosition(JLabel.BOTTOM);
-		debugTextLabel.setAlignmentY(BOTTOM_ALIGNMENT);
-		debugTextLabel.setOpaque(false);
-		this.add(debugTextLabel, BorderLayout.PAGE_START);
-
-		// create application frame and set visible
-		HeroesFrame f = new HeroesFrame();
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.add(this);
+		loadPieceGuisIntoBuffer(); 
+    }
+    
+    private void initGameGui(HeroesFrame frame) {
+    	this.setLayout(null);
+		int bgWidth = imgBackground.getWidth(null);
+		int bgHeight = imgBackground.getHeight(null);
 		
 		// menu
 		JMenuBar menubar = new JMenuBar();
@@ -160,18 +150,33 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
         options.add(optionsMenuMoves);
         options.add(optionsMenuCurrent);
         options.add(optionsMenuLast);
+        
         menubar.add(file);
-        menubar.add(options);
-        f.setJMenuBar(menubar);
-        f.pack();
-		f.setSize(imgBackground.getWidth(null) + 0, imgBackground.getHeight(null) + 23); // menubar height = 23
+        menubar.add(options);	
+        frame.setJMenuBar(menubar);
+        
+		// label to display game state
+		String labelText = getGameStateAsText();
+		lblGameState = new JLabel(labelText);
+
+		lblGameState.setFont(GAME_FONT);
+		int posX = (bgWidth - (bgWidth-BOARD_WIDTH>>1)) - (labelText.length()<<3);
+		lblGameState.setBounds(posX, 40, 200, 20);
+		lblGameState.setForeground(new Color(255, 255, 255, 128));
+		lblGameState.setOpaque(false);
+		// add JLabel to JPanel (this)
+		this.add(lblGameState);
 		
-		// add listeners to enable drag and drop pieces
-		PiecesDragAndDropListener listener = new PiecesDragAndDropListener(this, f);
-		// add listeners to JPanel (this)
-		this.addMouseListener(listener);
-		this.addMouseMotionListener(listener);
-	}
+		// label to display debug text, via setDebugText(String text)
+		debugText = new HtmlLabel();
+		debugLabel = new ScrollLabel(getDebugText(), 10, 5, 300, 110);
+		this.add(debugLabel);
+		
+		historyText = new HtmlLabel();
+		historyLabel = new ScrollLabel(getHistoryText(), bgWidth-180, bgHeight-500, 150, 480);
+		historyLabel.setTextColour(COLOUR_WHITE_50);
+		this.add(historyLabel);  	
+    }
 
 	// initialize animation graphics data
     private void initAnimationData() {
@@ -301,14 +306,6 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			state += " in check!";	
 		return state;
 	}
-	
-	public String getDebugText() {
-		 return debugText.getText();
-	}
-
-	public void setDebugText(String debugText) {
-		this.debugText.addLine(debugText);
-	}
 
 	public static int convertColumnToX(int column){
 		return PIECES_START_X + SQUARE_WIDTH * column;
@@ -363,7 +360,6 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 				state = guiPiece.getState();
 				colour = guiPiece.getColour();
 				anim = guiPiece.getAnim(state);
-//				Speak.say("guiPiece: " + guiPiece + "'s idle pause time: " + anim.getIdlePause(), true);
 				typeNbr = Game.getTypeNumber(guiPiece.getType(), colour);
 				offsetX = UNIT_ANIM_STARTX[state][typeNbr];
 				offsetY = UNIT_ANIM_STARTY[state][typeNbr];
@@ -390,9 +386,13 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		if(deathPiece != null && attackPiece != null) {
 			// death animation
 			if(!deathPiece.getAnim(STATE_DEATH).isFinishedDeath()) {
+				typeNbr = Game.getTypeNumber(deathPiece.getType(), colour);
+				offsetX = UNIT_ANIM_STARTX[STATE_DEATH][typeNbr];
+				offsetY = UNIT_ANIM_STARTY[STATE_DEATH][typeNbr];
 				attackPiece.setState(STATE_ATTACK); // making sure attackPiece has attack animation
 				deathPiece.getAnim(STATE_DEATH).update(System.currentTimeMillis());
-				g.drawImage(deathPiece.getImage(STATE_DEATH), deathPiece.getX(), deathPiece.getY() - GUI_PIECE_SCALE,
+				g.drawImage(deathPiece.getImage(STATE_DEATH), deathPiece.getX()+offsetX, 
+						deathPiece.getY()+offsetY - GUI_PIECE_SCALE,
 						deathPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).w,
 						deathPiece.getAnim(STATE_DEATH).unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
 			} else {
@@ -436,13 +436,12 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 		
 		// draw game state label
 		lblGameState.setText(getGameStateAsText());
-		if(DEBUG) {
-			
-			debugTextLabel.setVisible(true);
-		}
+		if(DEBUG)	
+			debugLabel.setVisible(true);
 		else
-			debugTextLabel.setVisible(false);
-		debugTextLabel.setText(getDebugText());
+			debugLabel.setVisible(false);
+		debugLabel.setText(getDebugText());
+		historyLabel.setText(getHistoryText());
 		
 		repaint();
 	}
@@ -460,29 +459,27 @@ public class ChessBoardGui extends JPanel implements Declarations, Vals {
 			drawRect(gr, pos, COLOUR_GREEN);
 		}		
 	}
-	
-	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
-		// if dragPiece hasn't moved outside of start square, snap back to start
-		if(draggedPiece.getPos() == targetPos)
-			draggedPiece.snapToNearestSquare();
-		// else move dragPiece to targetPos square
-		else if(draggedPiece.getMoveBits() != null) {
-			Move move = new Move(draggedPiece.getPos(), targetPos);
-			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
-				game.getActivePlayer().setCurrentMove(move);
-			} else {
-				// if target square wasn't part of valid moves, snap back to start
-				draggedPiece.snapToNearestSquare();
-			}
-		}
-		// thread pause 0.1 seconds
-		Game.threadPause(120);
-	}
 
 	public Game getGame() {
 		return game;
 	}
 	
+	public String getDebugText() {
+		 return debugText.getText();
+	}
+
+	public void setDebugText(String debugText) {
+		this.debugText.addLine(debugText);
+	}
+	
+	public String getHistoryText() {
+		 return historyText.getText();
+	}
+
+	public void setHistoryText(String text) {
+		historyText.addLine(text);
+	}
+
 	public PieceGui getGuiPiece(int pos) {
 		return guiPieces[pos];
 	}

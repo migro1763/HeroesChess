@@ -1,6 +1,6 @@
 package gui;
 
-import interfaces.Declarations;
+import interfaces.GuiParams;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.io.FileInputStream;
 import java.util.Properties;
 import java.util.ArrayList;
 
-public class Reader implements Declarations {
+public class Reader implements GuiParams {
 
 	public final int XPOS = 0;
 	public final int YPOS = 1;

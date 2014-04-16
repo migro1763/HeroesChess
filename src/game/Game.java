@@ -9,16 +9,17 @@ public class Game implements Runnable, Vals {
 	private BitBoard btb;
 	private ChessBoardGui board;
 	private MoveGenerator moveGen;
+//	private LinkedList historyList;
 	private int playerTurn = COLOR_WHITE; // who's turn it is
 	private Player blackPlayer = null, whitePlayer = null, activePlayer = null;
 	private Move pawnHistory = null;
 	private int enPassantPos = -1;
 	private int gameState = playerTurn;
+	private int turn = 1;
 	
 	public Game() {
 		btb = new BitBoard(this);
 		moveGen = new MoveGenerator(this);
-		board = new ChessBoardGui(this);
 	}
 	
 	// cloning constructor
@@ -30,39 +31,41 @@ public class Game implements Runnable, Vals {
 		this.whitePlayer = clone.whitePlayer;
 		this.blackPlayer = clone.blackPlayer;
 		this.activePlayer = clone.activePlayer;
+		this.turn = clone.turn;
 	}
 	
 	public void startGame() {
+		board = new ChessBoardGui(this);
+		AlgebraicNotation algNot = new AlgebraicNotation(btb);
 		// check if all players are ready
-		System.out.println("ChessGame: waiting for players");
+		System.out.println("HeroesChess: waiting for players...");
 		while (blackPlayer == null || whitePlayer == null) {
 			// players are still missing
 			threadPause(1000);
 		}
 		// set start player, white always starts game
-		setPlayerTurn(playerTurn);				
+		playerTurn = COLOR_WHITE;
+		activePlayer = whitePlayer;
 		System.out.println("ChessGame: starting game flow");
 		
 		// start game flow loop
 		boolean didMove = false;
 		while(!isGameOver()) {
-			didMove = gameLoop();
+			didMove = gameLoop(algNot);
 			threadPause(50);
 			changePlayerTurnAfterMove(didMove);
-//			Speak.say("mem usage: " + ((HeroesChess.startMem - HeroesChess.runtime.freeMemory()) >> 10) + " kb", true);
 		}
 		setGameState(playerTurn == COLOR_WHITE ? BLACK_WON : WHITE_WON);
 		board.playKingDeath(playerTurn);
 	}
 
-	public boolean gameLoop() {
+	public boolean gameLoop(AlgebraicNotation algNot) {
 		Move selectedMove = null;
-		boolean hasMoved = false;		
+		boolean hasMoved = false;
 		// update OCCUPIED and EMPTY in the MoveGenerator object
 		moveGen.updateBBStates();
 		// repaint graphics
 		board.repaint();
-		
 		// do this block if player has picked and dropped a piece thus making a move
 		// ---------------------------------------------------------
 		if(activePlayer.getCurrentMove() != null && board.getDragPiece() != null) {
@@ -70,7 +73,10 @@ public class Game implements Runnable, Vals {
 			PieceGui dragPiece = board.getDragPiece();
 			// test if the square dragPiece has been dropped into is part of valid moves
 			if((dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L) {
+				// make a clone of the current game BitBoard
+				BitBoard preGameBB = new BitBoard(btb);
 		    	selectedMove = activePlayer.getMove();
+		    	Speak.say("selectedMove: " + selectedMove, true);
 		    	// move the selected piece by selected move
 		    	movePiece(selectedMove);		
 	    		// snap the moved piece to its nearest square
@@ -79,6 +85,10 @@ public class Game implements Runnable, Vals {
 		    	activePlayer.moveSuccessfullyExecuted(selectedMove);
 				// do pawn promotion and finish castling setup (move rook etc.)
 				moveGen.pawnPromotion(selectedMove);
+				// derive algebraic chess notation of move
+				String notation = algNot.getNotation(selectedMove, preGameBB);
+		        if(notation != null)
+		        	board.setHistoryText(String.format("%03d", turn) + ". " + notation + " ");
 				// repaint graphics
 				board.repaint();
 			    hasMoved = true;
@@ -141,9 +151,27 @@ public class Game implements Runnable, Vals {
 		
 		if(enPassantPos < 0)
 			attackedPiecePos = -1;
-//		board.updateGuiPieces(move, attackedPiecePos, false);
 		enPassantPos = -1; // reset position of en passant attackee
 		board.updateGuiPieces(move, attackedPiecePos);
+	}
+	
+	// called when mouse is released thus dragged piece dropped
+	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
+		// if dragPiece hasn't moved outside of start square, snap back to start
+		if(draggedPiece.getPos() == targetPos)
+			draggedPiece.snapToNearestSquare();
+		// else move dragPiece to targetPos square
+		else if(draggedPiece.getMoveBits() != null) {
+			Move move = new Move(draggedPiece.getPos(), targetPos);
+			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
+				activePlayer.setCurrentMove(move);
+			} else {
+				// if target square wasn't part of valid moves, snap back to start
+				draggedPiece.snapToNearestSquare();
+			}
+		}
+		// thread pause 0.1 seconds
+		threadPause(120);
 	}
 
 	private void changePlayerTurnAfterMove(boolean didMove) {
@@ -162,8 +190,9 @@ public class Game implements Runnable, Vals {
 
 	public void setPlayerTurn(int playerTurn) {
 		this.playerTurn = playerTurn;
+		turn += this.playerTurn == COLOR_WHITE ? 1 : 0;
 		setGameState(playerTurn);
-		setActivePlayer((this.playerTurn == COLOR_WHITE) ? whitePlayer : blackPlayer);
+		setActivePlayer(this.playerTurn == COLOR_WHITE ? whitePlayer : blackPlayer);
 		activePlayer.setDragPiecesEnabled(true);
 	}
 	
@@ -185,9 +214,6 @@ public class Game implements Runnable, Vals {
 
 	public void setActivePlayer(Player activePlayer) {
 		this.activePlayer = activePlayer;
-		board.setDebugText("active player set to: " + this.activePlayer + 
-				", kCastling: " + this.activePlayer.iskSideCastling() +
-				", qCastling: " + this.activePlayer.isqSideCastling());
 	}
 	
 	public void setPlayer(int pieceColor, Player playerHandler) {

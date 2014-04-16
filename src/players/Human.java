@@ -4,7 +4,7 @@ import game.Move;
 
 public class Human extends Player {
 	
-	private String name;
+	protected String name;
 	
 	public Human(String name) {
 		this.name = name;

@@ -2,15 +2,14 @@ package gui;
 
 public class HtmlLabel {
 	
-	final String HTML = "<HTML>";
-	final String LINE_BREAK = "<BR>";
-	final String PARAGRAPH = "<P>";
+	final String HTML = "HTML";
+	final String LINE_BREAK = "BR";
+	final String PARAGRAPH = "P";
+	final String DIV = "DIV";
 	
 	private String text, body;
-	private int lineNbr;
 	
 	public HtmlLabel(String text) {
-		lineNbr = 0;
 		body = prepareBodyText(text);
 		makeText();
 	}
@@ -20,7 +19,6 @@ public class HtmlLabel {
 	}
 	
 	public void addLine(String text) {
-		lineNbr++;
 		body += prepareBodyText(text);
 		makeText();
 	}
@@ -38,11 +36,15 @@ public class HtmlLabel {
 		return "/" + tag;
 	}
 	
+	private String makeTag(String tag) {
+		return "<" + tag + ">";
+	}
+	
 	private String prepareBodyText(String body) {
-		return lineNbr + ": " + body + LINE_BREAK;
+		return body + makeTag(LINE_BREAK);
 	}
 	
 	private void makeText() {
-		text = HTML + body + endOf(HTML);
+		text = makeTag(HTML) + body + makeTag(endOf(HTML));
 	}
 }

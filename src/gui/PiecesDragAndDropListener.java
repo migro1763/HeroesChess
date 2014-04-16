@@ -1,21 +1,18 @@
 package gui;
 
 import game.BB;
-import game.Game;
-import interfaces.Declarations;
+import interfaces.GuiParams;
 
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 
 import players.Player;
 
-public class PiecesDragAndDropListener implements MouseListener, MouseMotionListener, Declarations {
+public class PiecesDragAndDropListener implements MouseListener, MouseMotionListener, GuiParams {
 
 	private ChessBoardGui board;
 	
@@ -102,7 +99,7 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 			PieceGui dragPiece = board.getDragPiece();
 			if(dragPiece != null) {
 				int pos = ChessBoardGui.getPosFromXY(evt.getPoint().x, evt.getPoint().y);
-				board.setNewPieceLocation(dragPiece, pos);
+				board.getGame().setNewPieceLocation(dragPiece, pos);
 		    	dragPiece.setState(STATE_IDLE);
 		    	dragPiece.getAnim(STATE_IDLE).resetIdlePause();
 		    	dragPiece.getAnim(STATE_IDLE).play();

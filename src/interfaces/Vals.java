@@ -1,10 +1,12 @@
 package interfaces;
 
 import game.Move;
+
 import java.awt.Color;
+import java.awt.Font;
 
 public interface Vals {
-	public static final String[] COLOUR_NAME = {"WHITE", "black"};
+	public static final String[] COLOUR_NAME = {"White", "Black","","","Neutral"};
 	
 	// player types
 	public static final int PLAYER_OPTION_HUMAN = 0;
@@ -12,14 +14,18 @@ public interface Vals {
 	public static final int PLAYER_OPTION_NETWORK = 2;
 	
 	// game states
+	public static final int COLOR_NEUTRAL = 4;
 	public static final int COLOR_WHITE = 0;
 	public static final int COLOR_BLACK = 1;
 	public static final int BLACK_WON = 2;
 	public static final int WHITE_WON = 3;
 		
-	public static final Color COLOUR_YELLOW = new Color(255, 255, 0, 64);
+	public static final Color COLOUR_YELLOW = new Color(255, 255, 0, 96);
 	public static final Color COLOUR_CYAN = new Color(64, 192, 255, 192);
 	public static final Color COLOUR_GREEN = new Color(0, 255, 0, 160);
+	public static final Color COLOUR_WHITE_50 = new Color(255, 255, 255, 128);
+	
+	public static final Font GAME_FONT = new Font("Arial", Font.PLAIN, 14);
 	
 	public static final int ROW_1 = 0, ROW_2 = 1, ROW_3 = 2, ROW_4 = 3, 
 							ROW_5 = 4, ROW_6 = 5, ROW_7 = 6, ROW_8 = 7;

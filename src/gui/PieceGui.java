@@ -2,10 +2,10 @@ package gui;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import interfaces.Declarations;
+import interfaces.GuiParams;
 import pieces.Piece;
 
-public class PieceGui extends Piece implements Declarations {
+public class PieceGui extends Piece implements GuiParams {
 	
 	// animation states
 	private int state = STATE_IDLE;

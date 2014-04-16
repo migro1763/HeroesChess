@@ -1,6 +1,6 @@
 package gui;
 
-import interfaces.Declarations;
+import interfaces.GuiParams;
 
 import java.awt.Graphics;
 //import java.awt.Graphics2D;
@@ -15,7 +15,7 @@ import javax.swing.JFrame;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class Heroes extends JFrame implements Declarations, KeyListener {
+public class Heroes extends JFrame implements GuiParams, KeyListener {
 
 	private static final long serialVersionUID = 1L;
 	BufferedImage sprite;
