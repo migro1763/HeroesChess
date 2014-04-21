@@ -7,10 +7,11 @@ public class HtmlLabel {
 	final String PARAGRAPH = "P";
 	final String DIV = "DIV";
 	
-	private String text, body;
+	private String text, lastText, body;
 	
 	public HtmlLabel(String text) {
 		body = prepareBodyText(text);
+		lastText = text;
 		makeText();
 	}
 	
@@ -19,8 +20,11 @@ public class HtmlLabel {
 	}
 	
 	public void addLine(String text) {
-		body += prepareBodyText(text);
-		makeText();
+		if(!text.equals(lastText)) {		
+			body += prepareBodyText(text);
+			lastText = text;
+			makeText();
+		}
 	}
 	
 	public void setText(String text) {

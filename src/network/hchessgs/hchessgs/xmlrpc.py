@@ -40,7 +40,7 @@ class Handler():
 	# this message will return the unique id for this channel
 	#
 	def createChannel(self, pstr_password):
-
+		
 		# delete old channels and messages
 		#
 		delete_date = datetime.datetime.now() - datetime.timedelta(days=7)
@@ -57,7 +57,7 @@ class Handler():
 		#
 		channel = Channel()
 		channel.creation_date = datetime.datetime.now()
-		channel.password = pstr_password
+		channel.password = pstr_password 
 		channel.put()
 		
 		# return channel id as string
@@ -71,8 +71,8 @@ class Handler():
 		channel = getChannel(pstr_channel_id)
 		
 		# verfy password
-		if channel.password != pstr_password:
-			raise ValueError('Invalid password for channel: ' + pstr_channel_id)
+		#if channel.password != pstr_password:
+		#	raise ValueError('Invalid password for channel: ' + pstr_channel_id)
 
 		# create and store message
 		message = Message(parent=channel)
@@ -86,12 +86,12 @@ class Handler():
 	# check if password is correct for specified channel id
 	#
 	def isValid(self, pstr_channel_id, pstr_password):
-		channel = getChannel(pstr_channel_id)
+		#channel = getChannel(pstr_channel_id)
 
-		if channel.password != pstr_password:
-			return "false"
-		else:
-			return "true"
+		#if channel.password != pstr_password:
+		#	return "false"
+		#else:
+		return "true"
 
 	# get last message that was sent into the specified channel
 	# (note: reading does not need authentication)
@@ -110,6 +110,23 @@ class Handler():
 	#
 	def allChannels(self):
 		return [str(channel.key().id()) for channel in Channel.all().fetch(1000)]
+	
+	# get last available channel key
+	#
+	def lastChannel(self):
+		currChannel = Channel.all().fetch(1)
+		return str(currChannel.key().id())
+	
+		# get last available channel key
+	#
+	def getLastChannel(self):
+		get_date = datetime.datetime.now()
+		channels = db.GqlQuery("SELECT * FROM Channel WHERE creation_date < :1 order by creation_date desc", get_date)
+		channel = channels.fetch(1)
+		if channel == None or len(channel) == 0:
+			return " "
+		else:
+			return str(channel[0].key().id())
 
 handler = Handler()
 

@@ -20,9 +20,7 @@ public interface GuiParams {
 		  										  	{-30,0,0,-15,0,-10		,-22,0,0,0,0,-36},
 		  										  	{-30,0,0,-22,0,-10		,-35,-15,0,0,0,-15},
 		  										  	{-30,-35,0,-26,0,-10	,-22,0,0,0,0,-36}};
-	
-	public static final String IMG_PATH_GITHUB = "C:/Users/Mikkel/Documents/GitHub/HeroesChess/img/";
-	
+		
 	// --- GUI dimensions ---
 	
 	public static final int BOARD_START_X = 218;

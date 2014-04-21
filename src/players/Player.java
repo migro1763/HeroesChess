@@ -1,16 +1,24 @@
 package players;
 
 import game.Move;
-import game.Speak;
 
 public abstract class Player {
 
+	protected String name;
 	protected boolean isCheck, isCheckMate;
 	protected boolean dragPiecesEnabled;
 	protected boolean kSideCastling = true, qSideCastling = true;
 	protected Move lastMove, currentMove;
 	protected int promoteTo = 0; // for pawn promotion, 0=no promotion
 	// 1=queen, 2=knight, 3=rook, 4=bishop
+	
+	public Player(String name) {
+		this.name = name;
+	}
+	
+	public Player() {
+		this.name = "";
+	}
 	
 	public abstract Move getMove();
 	

@@ -4,10 +4,8 @@ import game.Move;
 
 public class Human extends Player {
 	
-	protected String name;
-	
 	public Human(String name) {
-		this.name = name;
+		super(name);
 		dragPiecesEnabled = true;
 	}
 	
@@ -32,6 +30,6 @@ public class Human extends Player {
 	
 	@Override
 	public String toString() {
-		return name;
+		return "Human: " + name;
 	}
 }

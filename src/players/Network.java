@@ -2,7 +2,6 @@ package players;
 
 import game.Move;
 import game.Speak;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.apache.xmlrpc.XmlRpcException;
@@ -10,7 +9,7 @@ import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 
-public class Network extends Human {
+public class Network extends Player {
 
        /** equivalent to channelId. */
 	private String gameIdOnServer;
@@ -34,8 +33,9 @@ public class Network extends Human {
 	 */
 	public Network(String aGameIdOnServer, String aGamePassword, String name) {
 		super(name);
+		setDragPiecesEnabled(false);
+		
 		// set up connection to server
-		//
 		try{
 			XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 			config.setServerURL(new URL(XML_RPC_HOST_URL));
@@ -45,25 +45,36 @@ public class Network extends Human {
 		} catch(MalformedURLException mue) {
 			throw new IllegalStateException("Invalid XML-RPC-Server URL:" + XML_RPC_HOST_URL);
 		}
-
+		
+		this.gamePassword = aGamePassword;
+		createOrJoinGame(aGameIdOnServer);
+	}
+	
+	public void createOrJoinGame(String aGameIdOnServer) {
 		// do we need to create a new game or join existing?
 		//
 		if (aGameIdOnServer == null) {
 			// create new game
 			System.out.println("Creating new game");
-			this.gameIdOnServer = createGame(aGamePassword);
-			this.gamePassword = aGamePassword;
+			this.gameIdOnServer = createGame(gamePassword);
 		} else {
-			System.out.println("Joining game:" + aGameIdOnServer);
+			System.out.println("Joining game: " + aGameIdOnServer);
 			// verify received parameters
-			if (isGameValid(aGameIdOnServer, aGamePassword)) {
+			if (isGameValid(aGameIdOnServer, gamePassword)) {
 				this.gameIdOnServer = aGameIdOnServer;
-				this.gamePassword = aGamePassword;
 			} else {
 				throw new IllegalStateException("GameId: " + aGameIdOnServer
-						+ " and/or password: >" + aGamePassword+"< are invalid");
+						+ " and/or password: >" + gamePassword+"< are invalid");
 			}
-		}
+		}		
+	}
+	
+	/**
+	 * Network player always has dragpieces disabled
+	 */
+	@Override
+	public void setDragPiecesEnabled(boolean state) {
+		this.dragPiecesEnabled = false;
 	}
 
 	@Override
@@ -89,14 +100,16 @@ public class Network extends Human {
 			// if no messages returned, return null
 			if (lastMoveFromServerStr == null) {
 				System.out.println("No moves received");
-			}
-			/** if we receive the move that we have just sent, we do not want
+			
+			/** 
+			 * if we receive the move that we have just sent, we do not want
 			 * to return it to the game logic.
 			 */
-			else if (lastMoveStrSentToNetwork != null
+			} else if (lastMoveStrSentToNetwork != null
 					&& lastMoveStrSentToNetwork.equals(lastMoveFromServerStr)) {
 				System.out.println("Received move is the one we sent");
-				receivedMove = parsePacket(lastMoveFromServerStr);
+//				receivedMove = parsePacket(lastMoveFromServerStr);
+				return null;
 			} else {
 				receivedMove = parsePacket(lastMoveFromServerStr);
 			}
@@ -110,7 +123,7 @@ public class Network extends Human {
 	}
 
 	private Move parsePacket(String lastMoveFromServerStr) {
-		Speak.say("parsePacket: " + lastMoveFromServerStr, true);
+		Speak.say("inside parsePacket: " + lastMoveFromServerStr, true);
 		Move move = null;
 		String type = lastMoveFromServerStr.substring(0, 4);
 		String content = lastMoveFromServerStr.substring(4, 
@@ -188,6 +201,28 @@ public class Network extends Human {
 	    System.out.println("returned result:" + result);
 		return result;
 	}
+	
+	public static String getCurrentChannelId() {
+		XmlRpcClient client;
+		System.out.println("getting current channel id...");
+		Object[] params = new Object[]{};
+		String result = null;
+		try{
+			XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+			config.setServerURL(new URL(XML_RPC_HOST_URL));
+			client = new XmlRpcClient();
+			client.setTransportFactory(new XmlRpcCommonsTransportFactory(client));
+			client.setConfig(config);
+		} catch(MalformedURLException mue) {
+			throw new IllegalStateException("Invalid XML-RPC-Server URL:" + XML_RPC_HOST_URL);
+		}
+	    try {
+			result = (String) client.execute("getLastChannel", params);
+		} catch (XmlRpcException e) {
+			throw new IllegalStateException(e);
+		}
+		return result;
+	}
 
 	/**
 	 * checks the validity of the provided game id and password
@@ -213,10 +248,9 @@ public class Network extends Human {
 	 * @return the game id that the game server assigned to the new game
 	 */
 	private String createGame(String aGamePassword) {
-		System.out.println("sending createChannel request");
 	    Object[] params = new Object[]{aGamePassword};
 	    String result;
-	    
+	    System.out.println("sending createChannel request");
 	    try {
 	    	result = (String) xmlRpcClient.execute("createChannel", params);
 		} catch (XmlRpcException e) {
@@ -237,6 +271,12 @@ public class Network extends Human {
 	@Override
 	public String toString() {
 		return "Network: " + name;
+	}
+
+	@Override
+	public void moveSuccessfullyExecuted(Move move) {
+		// TODO Auto-generated method stub
+		
 	}
 }
 

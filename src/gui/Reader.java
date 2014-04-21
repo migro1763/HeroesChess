@@ -2,9 +2,9 @@ package gui;
 
 import interfaces.GuiParams;
 
-import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.ArrayList;
 
@@ -28,8 +28,14 @@ public class Reader implements GuiParams {
 
 		//get properties file
 		Properties prop = new Properties();
-		File file = new File(path);
-		prop.load(new FileInputStream(file));
+		InputStream inputStream = this.getClass().getResourceAsStream(path);
+		try {
+			prop.load(inputStream);
+		} catch (FileNotFoundException e) {
+			System.out.println("Unable to find file: " + path);
+			e.getStackTrace();
+			System.exit(0);
+		}
 
 		ArrayList<Unit> sprites = new ArrayList<Unit>();
 		ArrayList<String> propUnits = new ArrayList<String>(prop.stringPropertyNames());

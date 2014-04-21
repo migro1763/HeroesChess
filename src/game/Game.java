@@ -12,7 +12,7 @@ public class Game implements Runnable, Vals {
 //	private LinkedList historyList;
 	private int playerTurn = COLOR_WHITE; // who's turn it is
 	private Player blackPlayer = null, whitePlayer = null, activePlayer = null;
-	private Move pawnHistory = null;
+	private Move pawnHistory = null, currentMove = null;
 	private int enPassantPos = -1;
 	private int gameState = playerTurn;
 	private int turn = 1;
@@ -35,19 +35,22 @@ public class Game implements Runnable, Vals {
 	}
 	
 	public void startGame() {
-		board = new ChessBoardGui(this);
-		AlgebraicNotation algNot = new AlgebraicNotation(btb);
 		// check if all players are ready
-		System.out.println("HeroesChess: waiting for players...");
+		System.out.print("HeroesChess: waiting for players");
 		while (blackPlayer == null || whitePlayer == null) {
 			// players are still missing
 			threadPause(1000);
+			System.out.print(".");
 		}
+		System.out.println();
 		// set start player, white always starts game
 		playerTurn = COLOR_WHITE;
+		setGameState(playerTurn);
 		activePlayer = whitePlayer;
+		System.out.println("Active player: " + activePlayer);
 		System.out.println("ChessGame: starting game flow");
-		
+		AlgebraicNotation algNot = new AlgebraicNotation(btb);
+		board = new ChessBoardGui(this);
 		// start game flow loop
 		boolean didMove = false;
 		while(!isGameOver()) {
@@ -55,6 +58,10 @@ public class Game implements Runnable, Vals {
 			threadPause(50);
 			changePlayerTurnAfterMove(didMove);
 		}
+		
+		/** game won and over
+		 * play animation of losing player's king dying
+		 */
 		setGameState(playerTurn == COLOR_WHITE ? BLACK_WON : WHITE_WON);
 		board.playKingDeath(playerTurn);
 	}
@@ -64,12 +71,14 @@ public class Game implements Runnable, Vals {
 		boolean hasMoved = false;
 		// update OCCUPIED and EMPTY in the MoveGenerator object
 		moveGen.updateBBStates();
+		if(currentMove != null)
+			board.setDebugText("Current move: " + currentMove);
 		// repaint graphics
 		board.repaint();
 		// do this block if player has picked and dropped a piece thus making a move
 		// ---------------------------------------------------------
-		if(activePlayer.getCurrentMove() != null && board.getDragPiece() != null) {
-			long moveTargetBits = 1L<<activePlayer.getCurrentMove().getTrg();
+		if(currentMove != null && board.getDragPiece() != null) {
+			long moveTargetBits = 1L<<currentMove.getTrg();
 			PieceGui dragPiece = board.getDragPiece();
 			// test if the square dragPiece has been dropped into is part of valid moves
 			if((dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L) {
@@ -98,6 +107,14 @@ public class Game implements Runnable, Vals {
 		// end of block when player is holding piece
 		
 		return hasMoved;
+	}
+	
+	public void setCurrentMove(Move move) {
+		currentMove = move;
+	}
+	
+	public Move getCurrentMove() {
+		return currentMove;
 	}
 
 	public void movePiece(Move move) {
@@ -155,24 +172,24 @@ public class Game implements Runnable, Vals {
 		board.updateGuiPieces(move, attackedPiecePos);
 	}
 	
-	// called when mouse is released thus dragged piece dropped
-	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
-		// if dragPiece hasn't moved outside of start square, snap back to start
-		if(draggedPiece.getPos() == targetPos)
-			draggedPiece.snapToNearestSquare();
-		// else move dragPiece to targetPos square
-		else if(draggedPiece.getMoveBits() != null) {
-			Move move = new Move(draggedPiece.getPos(), targetPos);
-			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
-				activePlayer.setCurrentMove(move);
-			} else {
-				// if target square wasn't part of valid moves, snap back to start
-				draggedPiece.snapToNearestSquare();
-			}
-		}
-		// thread pause 0.1 seconds
-		threadPause(120);
-	}
+//	// called when mouse is released thus dragged piece dropped
+//	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
+//		// if dragPiece hasn't moved outside of start square, snap back to start
+////		if(draggedPiece.getPos() == targetPos)
+////			draggedPiece.snapToNearestSquare();
+//		// else move dragPiece to targetPos square
+//		if(draggedPiece.getMoveBits() != null) {
+//			Move move = new Move(draggedPiece.getPos(), targetPos);
+//			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
+//				activePlayer.setCurrentMove(move);
+//			} else {
+//				// if target square wasn't part of valid moves, snap back to start
+//				draggedPiece.snapToNearestSquare();
+//			}
+//		}
+//		// thread pause 0.1 seconds
+//		threadPause(120);
+//	}
 
 	private void changePlayerTurnAfterMove(boolean didMove) {
 		if(didMove) {

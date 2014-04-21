@@ -12,7 +12,7 @@ class Frm implements Cloneable {
 		this.w = w;
 		this.h = h;
 	}
-	
+
 	public Frm() {
 		this(0, 0, 0, 0);
 	}

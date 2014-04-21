@@ -6,21 +6,21 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
+import listeners.PiecesDragAndDropListener;
 import pieces.Piece;
 import game.BitBoard;
 import game.Game;
@@ -31,6 +31,14 @@ import interfaces.Vals;
 public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 	
 	private static final long serialVersionUID = 1L;
+	
+	private static final String bgImgPaths[] = {"/img/gameBg_grasshills.png",
+												"/img/gameBg_desert.png",
+												"/img/gameBg_swamp.png",
+												"/img/gameBg_winter.png"
+												};
+	private static final String spriteSheetTxtPath = "heroesFrames_sheet2.txt";
+	private static final String spriteSheetImgPath = "/img/heroesFrames_sheet2.png";
 	
 	private static boolean DEBUG = true;
 	private static boolean SHOW_MOVES = true;
@@ -47,11 +55,11 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 	private PieceGui[] guiPieces = new PieceGui[64];
 	private List<PieceGui> capturedGuiPieces = new ArrayList<PieceGui>();
 	private PieceGui dragPiece = null, attackPiece = null, deathPiece = null;
-	private int piecesSize = 0;
 
 	public Move lastMove = null;
 	private double getScaleAdd;
 	
+	private HeroesFrame frame;
 	private SpriteSheet ss;
 	private Reader reader = new Reader();
 	private ArrayList<Unit> data;
@@ -61,17 +69,25 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
     public int whichState = 0;
     
     public ChessBoardGui(Game game) {
-		// set game object as the created chess game parameter
+    	// set game object as the created chess game parameter
 		this.game = game;
+		SwingUtilities.invokeLater(new Runnable() {
+	        public void run() {
+	            createAndShowGUI();
+	        }
+        }); 	
+	}
+    
+    private void createAndShowGUI() {
 		// load graphics into buffers/memory
 		loadGraphics();	
 		// create application frame
-		HeroesFrame frame = new HeroesFrame(imgBackground.getWidth(null), 
-				imgBackground.getHeight(null)+23); // menubar height = 23
+		frame = new HeroesFrame(imgBackground.getWidth(null), imgBackground.getHeight(null)+23); // menubar height = 23
 		// set up all gui elements
 		initGameGui(frame);
+		frame.add(this);
 		// configure game frame	
-		frame.display(this);	
+		frame.display();	
 		
 		// setup 64-size array of gui pieces, one for each board square
 		setupGuiPieceArray();
@@ -80,17 +96,14 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 		PiecesDragAndDropListener listener = new PiecesDragAndDropListener(this, frame);
 		// add listeners to JPanel (this)
 		this.addMouseListener(listener);
-		this.addMouseMotionListener(listener); 	
-	}
+		this.addMouseMotionListener(listener);  	
+    }
     
     private void loadGraphics() {
     	// load background image
-		try {
-			this.imgBackground = new ImageIcon(ImageIO.read(
-					new File("./img/battleBG1024x730_topL218x123_sq74.png"))).getImage();
-		} catch (IOException exc) {
-			System.out.println("image background path illegal!");
-		}
+    	BufferedImageLoader imgLoader = new BufferedImageLoader();
+//			this.imgBackground = new ImageIcon(ImageIO.read(this.getClass().getResource(bgImgPath))).getImage();
+		this.imgBackground = imgLoader.loadImage(bgImgPaths[new Random().nextInt(4)]);
     	// factor to scale gui pieces to fit board graphics
 		getScaleAdd = ((double)GUI_PIECE_SCALE / 12.0) - 1.0;
 
@@ -118,7 +131,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
         fileMenuExit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				System.exit(0);			
+				System.exit(0);
 			}
         });
         optionsMenuDebug.addActionListener(new ActionListener() {
@@ -183,13 +196,14 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
         BufferedImageLoader loader = new BufferedImageLoader();
         BufferedImage spriteSheet = null;
 		// load all units as array list of Unit objects
+        System.out.println("Loading spritesheet text: " + 
+        		this.getClass().getResource(spriteSheetTxtPath).getFile());
 		try {
-			data = reader.readData("./img/heroesFrames_sheet2.txt");
+			data = reader.readData(spriteSheetTxtPath);
 		} catch (IOException e) {
-			System.out.println("spritesheet text path illegal!");
+			System.out.println("ChessBoardGui: spritesheet text path illegal!");
 		}
-        
-		spriteSheet = loader.loadImage("file:./img/heroesFrames_sheet2.png");
+		spriteSheet = loader.loadImage(spriteSheetImgPath);
         ss = new SpriteSheet(spriteSheet);     
     }
     
@@ -483,25 +497,9 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 	public PieceGui getGuiPiece(int pos) {
 		return guiPieces[pos];
 	}
-	
-	public void setGuiPiece(int pos, PieceGui guiPiece) {
-		guiPieces[pos] = guiPiece;
-	}
 
 	public PieceGui[] getGuiPieces() {
 		return guiPieces;
-	}
-
-	public void setGuiPieces(PieceGui[] guiPieces) {
-		this.guiPieces = guiPieces;
-	}
-
-	public int getPiecesSize() {
-		return piecesSize;
-	}
-
-	public void setPiecesSize(int piecesSize) {
-		this.piecesSize = piecesSize;
 	}
 
 	public void playAttackAnim(Move move, PieceGui attackingPiece, PieceGui attackedPiece) {
