@@ -2,6 +2,8 @@ package gui;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+
+import game.BitBoard;
 import interfaces.GuiParams;
 import pieces.Piece;
 
@@ -78,8 +80,8 @@ public class PieceGui extends Piece implements GuiParams {
 		int offset = 0;
 		if(isAttack)
 			offset = isAttacker ? -SQUARE_WIDTH>>1 : SQUARE_WIDTH>>1;		
-		x = ChessBoardGui.convertColumnToX(pos%8) + offset;
-		y = ChessBoardGui.convertRowToY(pos/8);
+		x = ChessBoardGui.convertColumnToX(BitBoard.getX(pos)) + offset;
+		y = ChessBoardGui.convertRowToY(BitBoard.getY(pos));
 	}
 	
 	public void snapToNearestSquare(boolean isAttack, boolean isAttacker) {

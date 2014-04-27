@@ -25,6 +25,7 @@ import pieces.Piece;
 import game.BitBoard;
 import game.Game;
 import game.Move;
+import game.Speak;
 import interfaces.GuiParams;
 import interfaces.Vals;
 
@@ -196,8 +197,6 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
         BufferedImageLoader loader = new BufferedImageLoader();
         BufferedImage spriteSheet = null;
 		// load all units as array list of Unit objects
-        System.out.println("Loading spritesheet text: " + 
-        		this.getClass().getResource(spriteSheetTxtPath).getFile());
 		try {
 			data = reader.readData(spriteSheetTxtPath);
 		} catch (IOException e) {
@@ -298,12 +297,17 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
     }
     
 	public void updateGuiPieces(Move move, int attackedPiecePos) {
-		PieceGui guiPiece = guiPieces[move.getSrc()];
-		guiPiece.setPos(move.getTrg());
-		guiPieces[move.getSrc()] = null;
-		guiPieces[move.getTrg()] = guiPiece;
-		if(attackedPiecePos != -1)
-			guiPieces[attackedPiecePos] = null;
+		if(move != null) {
+			PieceGui guiPiece = guiPieces[move.getSrc()];
+			Speak.tell("ChessBoardGui.updateGuiPieces: guiPiece = " + guiPiece, true);
+			if(guiPiece != null) {
+				guiPiece.setPos(move.getTrg());
+				guiPieces[move.getSrc()] = null;
+				guiPieces[move.getTrg()] = guiPiece;
+				if(attackedPiecePos != -1)
+					guiPieces[attackedPiecePos] = null;
+			}
+		}
 	}
 	
 	private String getGameStateAsText() {

@@ -1,5 +1,17 @@
 package game;
 
+/** HeroesChess
+ * 
+ * A chess game with a graphical interface 
+ * ripped from Heroes of Might and Magic II & III
+ * 
+ * v0.51
+ * 
+ * @author Mikkel Syse Groesland 2014
+ * 
+ * All graphics copyright and trademark of 3DO/Ubisoft
+ */
+
 import gui.HeroesFrame;
 import gui.TitleScreen;
 import interfaces.Vals;
@@ -12,9 +24,7 @@ import players.Network;
 import players.Player;
 
 public class HeroesChess implements Vals {
-	
-	String[] iPlayerHandlerOptions = new String[] {"Swing GUI", "AI Player", "Network Player"};
-	
+		
 	public HeroesChess() {
 		
 		HeroesFrame frame = new HeroesFrame();
@@ -27,7 +37,7 @@ public class HeroesChess implements Vals {
 		int numberOfPlayers = -1, playerColour = -1, networkSelect = -1;
 		int choice;
 		String gameIdOnServer = null;
-		String gamePassword = null, name = "name";
+		String gamePassword = null, name = "Internet";
 		Player playerWhite = null, playerBlack = null, networkPlayer = null;
 		
 		while (gameIdOnServer == null) {
@@ -110,14 +120,14 @@ public class HeroesChess implements Vals {
 		
 		if(playerColour == COLOR_WHITE) {
 			try {
-				playerWhite = getPlayerHandler(PLAYER_OPTION_HUMAN, game, gameIdOnServer, gamePassword, name);
+				playerWhite = getPlayerHandler(PLAYER_OPTION_HUMAN, game, gameIdOnServer, gamePassword, gamePassword);
 				playerBlack = networkPlayer;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		} else {
 			try {
-				playerBlack = getPlayerHandler(PLAYER_OPTION_HUMAN, game, gameIdOnServer, gamePassword, name);
+				playerBlack = getPlayerHandler(PLAYER_OPTION_HUMAN, game, gameIdOnServer, gamePassword, gamePassword);
 				playerWhite = networkPlayer;
 			} catch (IOException e) {
 				e.printStackTrace();

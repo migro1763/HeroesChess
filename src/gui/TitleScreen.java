@@ -96,7 +96,6 @@ public class TitleScreen extends JPanel implements Runnable, MouseListener, GuiP
     private void loadGraphics() {
     	// load background and menu image
     	BufferedImageLoader imgLoader = new BufferedImageLoader();
-		//this.imgBackground = new ImageIcon(ImageIO.read(this.getClass().getResource(bgImagePath + bgImage))).getImage();
 		this.imgBackground = imgLoader.loadImage(bgImagePath + bgImage);
 		// load buttonImages
 		for (String path : BUTTON_PATHS)

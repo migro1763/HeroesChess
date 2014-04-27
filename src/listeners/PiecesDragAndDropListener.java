@@ -3,6 +3,7 @@ package listeners;
 import game.BB;
 import game.Game;
 import game.Move;
+import game.Speak;
 import gui.ChessBoardGui;
 import gui.PieceGui;
 import interfaces.GuiParams;
@@ -97,18 +98,16 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 	@Override
 	public void mouseReleased(MouseEvent evt) {
 		mouseDownCompCoords = null;
-//		Game.threadPause(20);
 		if(board.getDragPiece() != null){
 			// set game piece to the new location if possible
 			PieceGui dragPiece = board.getDragPiece();
 			if(dragPiece != null) {
 				int pos = ChessBoardGui.getPosFromXY(evt.getPoint().x, evt.getPoint().y);
-//				board.getGame().setNewPieceLocation(dragPiece, pos);
 				// else move dragPiece to targetPos square
 				if(dragPiece.getMoveBits() != null) {
 					Move move = new Move(dragPiece.getPos(), pos);
 					if((dragPiece.getMoveBits().getBits() & 1L<<pos) > 0L) {
-//						activePlayer.setCurrentMove(move);
+						Speak.tell("PiecesDragAndDropListener.mouseReleased: move = " + move, true);
 						board.getGame().setCurrentMove(move);
 					} else {
 						// if target square wasn't part of valid moves, snap back to start
@@ -116,7 +115,7 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 					}
 				}
 				// thread pause 0.1 seconds
-				Game.threadPause(20);
+				Game.threadPause(120);
 		    	dragPiece.setState(STATE_IDLE);
 		    	dragPiece.getAnim(STATE_IDLE).resetIdlePause();
 		    	dragPiece.getAnim(STATE_IDLE).play();

@@ -406,7 +406,7 @@ public class MoveGenerator implements Vals, GuiParams {
 				Game.getLongName(rook, colour), Game.getLongName(bishop, colour)};
 		
 		final OptionsDiag optionsDiag = new OptionsDiag(
-		"What do you wish the pawn to be promoted to?\n", choices, 1, BOARD_WIDTH/2, BOARD_HEIGHT/2);
+				"What do you wish the pawn to be promoted to?\n", choices, 1, BOARD_WIDTH/2, BOARD_HEIGHT/2);
 		
 		int choice = optionsDiag.getChoice();
 		pawnBB.mulBits(~(1L<<posOfMovedPiece)); // set pawn bit to 0 at pos

@@ -101,16 +101,16 @@ public class BitBoard {
     	char[][] newBoard = new char[8][8];
         for (int i = 0; i < 64; i++)
         	newBoard[getY(i)][getX(i)] = (BigInteger.valueOf(bitboard).testBit(i)) ? '1' : ' ';
-        Speak.say("      ______________________", true);
+        Speak.tell("      ______________________", true);
         for (int i=0; i<8; i++)   	
-            Speak.say((8-i) + "|" + i*8 + ((i<2) ? "  " : " ") + Arrays.toString(newBoard[i]), true);
-        Speak.say("      ииииииииииииииииииииии", true);
-        Speak.say("      0  1  2  3  4  5  6  7", true);
-        Speak.say("      a  b  c  d  e  f  g  h", true);
+            Speak.tell((8-i) + "|" + i*8 + ((i<2) ? "  " : " ") + Arrays.toString(newBoard[i]), true);
+        Speak.tell("      ииииииииииииииииииииии", true);
+        Speak.tell("      0  1  2  3  4  5  6  7", true);
+        Speak.tell("      a  b  c  d  e  f  g  h", true);
     }
     
     public static void drawArray(long bitboard, String label) {
-    	Speak.say(label);
+    	Speak.tell(label, true);
     	drawArray(bitboard);
     }
     
@@ -125,6 +125,12 @@ public class BitBoard {
     	return newBoard;
     }
     
+    /** Returns type of piece on given position
+     * as a char, case indicates colour (upper = white)
+     * 
+     * @param position
+     * @return char type of piece
+     */
     public char getArraySquare(int position) {
     	if(position >= 0 && position < 64) {
 	    	if (BigInteger.valueOf(wp.getBits()).testBit(position)) return 'P';
@@ -142,23 +148,10 @@ public class BitBoard {
     	}
     	return ' ';
     }
-    
-    // *** OBSOLETE METHODS! ***
-    // coord 0 = x1, 1 = y1, 2 = x2, 3 = y2
-    public static int getPosFromMove(String move, int coord) {
-    	switch(coord) {
-	    	case 0: return Integer.parseInt(move.substring(0,1));
-	    	case 1: return Integer.parseInt(move.substring(1,2));
-	    	case 2: return Integer.parseInt(move.substring(2,3));
-	    	case 3: return Integer.parseInt(move.substring(3,4));
-	    	default: return 0;
-    	}
-    }
-    
-    // *** OBSOLETE METHODS END ***
  		
 	public void movePieceBits(Move move) {
 		BB bitboard = getBB(getArraySquare(move.getSrc()));
+		if(bitboard == null) return;
         bitboard.mulBits((bitboard.getBits() & ~(1L << move.getSrc()))); // set source to false (0)
     	bitboard.addBits((bitboard.getBits() | (1L << move.getTrg()))); // set target to true (1)
 	}
@@ -202,6 +195,11 @@ public class BitBoard {
 		return pos >> 3;
 	}
 	
+	/** Get bitboard of type, case indicating colour
+	 * 
+	 * @param type
+	 * @return long bitboard
+	 */
 	public BB getBB(char type) {
 		switch(type) {
 			case 'P':	return wp;
@@ -220,6 +218,12 @@ public class BitBoard {
 		}
 	}
 	
+	/** Get bitboard of type of colour
+	 * 
+	 * @param type
+	 * @param colour
+	 * @return long bitboard
+	 */
 	public BB getBB(char type, int colour) {
 		return getBB(colour == Vals.COLOR_WHITE ? 
 				Character.toUpperCase(type) : Character.toLowerCase(type));

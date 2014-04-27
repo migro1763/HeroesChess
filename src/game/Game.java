@@ -3,6 +3,8 @@ package game;
 import gui.ChessBoardGui;
 import gui.PieceGui;
 import interfaces.Vals;
+import players.Human;
+import players.Network;
 import players.Player;
 
 public class Game implements Runnable, Vals {
@@ -20,6 +22,7 @@ public class Game implements Runnable, Vals {
 	public Game() {
 		btb = new BitBoard(this);
 		moveGen = new MoveGenerator(this);
+		Speak.setDebug(false);
 	}
 	
 	// cloning constructor
@@ -36,7 +39,7 @@ public class Game implements Runnable, Vals {
 	
 	public void startGame() {
 		// check if all players are ready
-		System.out.print("HeroesChess: waiting for players");
+		Speak.tell("HeroesChess: waiting for players", true);
 		while (blackPlayer == null || whitePlayer == null) {
 			// players are still missing
 			threadPause(1000);
@@ -47,8 +50,8 @@ public class Game implements Runnable, Vals {
 		playerTurn = COLOR_WHITE;
 		setGameState(playerTurn);
 		activePlayer = whitePlayer;
-		System.out.println("Active player: " + activePlayer);
-		System.out.println("ChessGame: starting game flow");
+		Speak.say("Active player: " + activePlayer, true);
+		Speak.tell("ChessGame: starting game flow", true);
 		AlgebraicNotation algNot = new AlgebraicNotation(btb);
 		board = new ChessBoardGui(this);
 		// start game flow loop
@@ -59,7 +62,7 @@ public class Game implements Runnable, Vals {
 			changePlayerTurnAfterMove(didMove);
 		}
 		
-		/** game won and over
+		/** Game win
 		 * play animation of losing player's king dying
 		 */
 		setGameState(playerTurn == COLOR_WHITE ? BLACK_WON : WHITE_WON);
@@ -67,45 +70,75 @@ public class Game implements Runnable, Vals {
 	}
 
 	public boolean gameLoop(AlgebraicNotation algNot) {
+		Speak.say("Game.gameLoop()", true);
 		Move selectedMove = null;
-		boolean hasMoved = false;
+		boolean hasMoved = false, isHuman = false;
+		PieceGui dragPiece = null;
+		long moveTargetBits = 0L;
+		
+		if(activePlayer instanceof Human)
+			isHuman = true;
+		
 		// update OCCUPIED and EMPTY in the MoveGenerator object
 		moveGen.updateBBStates();
-		if(currentMove != null)
-			board.setDebugText("Current move: " + currentMove);
+		
 		// repaint graphics
 		board.repaint();
-		// do this block if player has picked and dropped a piece thus making a move
-		// ---------------------------------------------------------
-		if(currentMove != null && board.getDragPiece() != null) {
-			long moveTargetBits = 1L<<currentMove.getTrg();
-			PieceGui dragPiece = board.getDragPiece();
+
+		if(isHuman)
+			dragPiece = board.getDragPiece();
+		else {
+			// network/computer: get last move from server
+    		currentMove = activePlayer.getMove();
+    		selectedMove = currentMove;
+    		if(selectedMove != null)
+	    		// get the moved piece as gui piece
+				dragPiece = board.getGuiPiece(selectedMove.getTrg());
+		}
+		
+		if(currentMove != null) {
+			board.setDebugText("Current move: " + currentMove);
+			if(isHuman)
+				moveTargetBits = 1L<<currentMove.getTrg();
+
+			// test if active player is not human player or
 			// test if the square dragPiece has been dropped into is part of valid moves
-			if((dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L) {
+			if(!isHuman || 
+				dragPiece != null && (dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L) {
 				// make a clone of the current game BitBoard
 				BitBoard preGameBB = new BitBoard(btb);
-		    	selectedMove = activePlayer.getMove();
-		    	Speak.say("selectedMove: " + selectedMove, true);
-		    	// move the selected piece by selected move
-		    	movePiece(selectedMove);		
-	    		// snap the moved piece to its nearest square
-	    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
-		    	// finish move setup for active player
-		    	activePlayer.moveSuccessfullyExecuted(selectedMove);
-				// do pawn promotion and finish castling setup (move rook etc.)
-				moveGen.pawnPromotion(selectedMove);
-				// derive algebraic chess notation of move
-				String notation = algNot.getNotation(selectedMove, preGameBB);
-		        if(notation != null)
-		        	board.setHistoryText(String.format("%03d", turn) + ". " + notation + " ");
-				// repaint graphics
-				board.repaint();
-			    hasMoved = true;
-			} 
-		}			
-		// -----------------------------------------
-		// end of block when player is holding piece
-		
+		    	if(isHuman) {
+		    		// set last move 
+					activePlayer.setCurrentMove(currentMove);
+					selectedMove = activePlayer.getMove();
+		    	}
+		    	
+				if(selectedMove != null) {	
+//					if(!isHuman)
+//						// get the moved piece as gui piece
+//						dragPiece = board.getGuiPiece(selectedMove.getTrg());
+					
+					Speak.tell(activePlayer + "'s dragPiece: " + dragPiece, true);
+					
+			    	// move the selected piece by selected move
+			    	movePiece(selectedMove);
+		    		// snap the moved piece to its nearest square
+			    	if(dragPiece != null)
+			    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
+			    	// finish move setup for active player
+			    	activePlayer.moveSuccessfullyExecuted(selectedMove);
+					// do pawn promotion and finish castling setup (move rook etc.)
+					moveGen.pawnPromotion(selectedMove);
+					// derive algebraic chess notation of move
+					String notation = algNot.getNotation(selectedMove, preGameBB);
+			        if(notation != null)
+			        	board.setHistoryText(String.format("%03d", turn) + ". " + notation + " ");
+					// repaint graphics
+					board.repaint();
+				    hasMoved = true;
+				}
+			}
+		}
 		return hasMoved;
 	}
 	
@@ -118,82 +151,80 @@ public class Game implements Runnable, Vals {
 	}
 
 	public void movePiece(Move move) {
+		Speak.say("Game.movePiece()", true);
+		Speak.tell("Game:movePiece, move in: " + move, true);
 		char type = btb.getArraySquare(move.getSrc());
         char oppType = btb.getArraySquare(move.getTrg());
         int posOfMovedPiece = move.getTrg();
         int attackedPiecePos = posOfMovedPiece;
         
-        // en passant attack
-        // if enPassantPos is not -1, that means an en passant attack has been made
-        if(enPassantPos >= 0 && Math.abs(move.getSrc() - enPassantPos) == 1) {
-        	 oppType = btb.getArraySquare(enPassantPos);
-        	 attackedPiecePos = enPassantPos;
-        	 board.setDebugText("en passant!");
-        }       
+//        BitBoard.drawArray(btb.getColourPieces(playerTurn), "bits of current player, before");
+//        BitBoard.drawArray(btb.getColourPieces(1-playerTurn), "bits of opponent player");
         
-        // if target square is not empty = attack!
-        if(oppType != ' ') {
-        	// add captured piece to list of captured pieces
-        	PieceGui deathPiece = new PieceGui(board.getGuiPiece(attackedPiecePos));
-        	board.addToCapturedGuiPieces(deathPiece);
-        	// set position bit of oppType's bitboard to 0
-        	btb.setBB(oppType, attackedPiecePos, 0);
-        	// setup and start attack animation
-        	board.playAttackAnim(move, board.getGuiPiece(move.getSrc()), deathPiece);
-        }
-		btb.movePieceBits(move);
-		
-		// store pawn double push to history for en passant next turn
-		if(Character.toUpperCase(type) == 'P' && 
-				Math.abs(move.getTrg() - move.getSrc()) == 16) // double push
-			pawnHistory = move;
-		else
-			pawnHistory = null;
-		
-		// if moved piece is a king, negate both castling possibilities
-		if(Character.toUpperCase(type) == 'K') {
-			activePlayer.setkSideCastling(false);
-			activePlayer.setqSideCastling(false);
+        if(move != null) {
+	        // en passant attack
+	        // if enPassantPos is not -1, that means an en passant attack has been made
+	        if(enPassantPos >= 0 && Math.abs(move.getSrc() - enPassantPos) == 1) {
+	        	 oppType = btb.getArraySquare(enPassantPos);
+	        	 attackedPiecePos = enPassantPos;
+	        	 board.setDebugText("en passant!");
+	        }       
+	        
+	        // if target square is not empty = attack!
+	        if(oppType != ' ') {
+	        	// set position bit of oppType's bitboard to 0
+	        	btb.setBB(oppType, attackedPiecePos, 0);
+	        	// add captured piece to list of captured pieces
+	        	PieceGui deathPiece = new PieceGui(board.getGuiPiece(attackedPiecePos));
+	        	board.addToCapturedGuiPieces(deathPiece);
+	        	// setup and start attack animation
+	        	board.playAttackAnim(move, board.getGuiPiece(move.getSrc()), deathPiece);
+	            threadPause(100);
+	        }
+	        btb.movePieceBits(move);
 			
-			// test if move was castling and if so, move corresponding rook
-			if(move.equals(K_CASTLING_MOVE[playerTurn]) | move.equals(Q_CASTLING_MOVE[playerTurn]))
-				moveGen.moveRookInCastling(move);
-		}			
-		// if moved piece is a rook, negate corresponding side castling possibility
-		if(Character.toUpperCase(type) == 'R')
-			if(posOfMovedPiece == 0 || posOfMovedPiece == 56) // if left side of board
-				activePlayer.setqSideCastling(false);
-			else if(posOfMovedPiece == 7 || posOfMovedPiece == 63) // if right side of board
+	//		BitBoard.drawArray(btb.getColourPieces(playerTurn), "bits of current player, after");
+			
+			// store pawn double push to history for en passant next turn
+			if(Character.toUpperCase(type) == 'P' && 
+					Math.abs(move.getTrg() - move.getSrc()) == 16) // double push
+				pawnHistory = move;
+			else
+				pawnHistory = null;
+			
+			// if moved piece is a king, negate both castling possibilities
+			if(Character.toUpperCase(type) == 'K') {
 				activePlayer.setkSideCastling(false);
-		
-		if(enPassantPos < 0)
-			attackedPiecePos = -1;
-		enPassantPos = -1; // reset position of en passant attackee
-		board.updateGuiPieces(move, attackedPiecePos);
+				activePlayer.setqSideCastling(false);
+				
+				// test if move was castling and if so, move corresponding rook
+				if(move.equals(K_CASTLING_MOVE[playerTurn]) | move.equals(Q_CASTLING_MOVE[playerTurn]))
+					moveGen.moveRookInCastling(move);
+			}			
+			// if moved piece is a rook, negate corresponding side castling possibility
+			if(Character.toUpperCase(type) == 'R')
+				if(posOfMovedPiece == 0 || posOfMovedPiece == 56) // if left side of board
+					activePlayer.setqSideCastling(false);
+				else if(posOfMovedPiece == 7 || posOfMovedPiece == 63) // if right side of board
+					activePlayer.setkSideCastling(false);
+			
+			if(enPassantPos < 0)
+				attackedPiecePos = -1;
+			enPassantPos = -1; // reset position of en passant attackee
+			board.updateGuiPieces(move, attackedPiecePos);
+			threadPause(50);
+        }
 	}
-	
-//	// called when mouse is released thus dragged piece dropped
-//	public void setNewPieceLocation(PieceGui draggedPiece, int targetPos) {
-//		// if dragPiece hasn't moved outside of start square, snap back to start
-////		if(draggedPiece.getPos() == targetPos)
-////			draggedPiece.snapToNearestSquare();
-//		// else move dragPiece to targetPos square
-//		if(draggedPiece.getMoveBits() != null) {
-//			Move move = new Move(draggedPiece.getPos(), targetPos);
-//			if((draggedPiece.getMoveBits().getBits() & 1L<<targetPos) > 0L) {
-//				activePlayer.setCurrentMove(move);
-//			} else {
-//				// if target square wasn't part of valid moves, snap back to start
-//				draggedPiece.snapToNearestSquare();
-//			}
-//		}
-//		// thread pause 0.1 seconds
-//		threadPause(120);
-//	}
 
 	private void changePlayerTurnAfterMove(boolean didMove) {
+		Speak.say("Game.changePlayerTurnAfterMove()", true);
 		if(didMove) {
 			setPlayerTurn(1-playerTurn);
+			// if new turn's player is a network player, send currentMove to server:
+			if(activePlayer instanceof Network)
+				activePlayer.setCurrentMove(currentMove);
+			
+			Speak.tell("Game.changePlayerTurnAfterMove: Active player changed to: " + activePlayer, true);
 			// test for check
 			activePlayer.setCheck(moveGen.isInCheck(playerTurn));
 			// test for check mate

@@ -9,8 +9,6 @@ public class BufferedImageLoader {
     
     public BufferedImage loadImage(String pathRelativeToThis) {
         BufferedImage img = null;
-        System.out.println("Loading (" + pathRelativeToThis + "): " + 
-        					this.getClass().getResource(pathRelativeToThis));
 		try {
 			img = ImageIO.read(this.getClass().getResource(pathRelativeToThis));
 		} catch (IOException e) {

@@ -55,10 +55,10 @@ public class Network extends Player {
 		//
 		if (aGameIdOnServer == null) {
 			// create new game
-			System.out.println("Creating new game");
+			Speak.tell("Network.createOrJoinGame: HOST >>> Creating new game", true);
 			this.gameIdOnServer = createGame(gamePassword);
 		} else {
-			System.out.println("Joining game: " + aGameIdOnServer);
+			Speak.tell("Network.createOrJoinGame: GUEST >>> Joining game: " + aGameIdOnServer, true);
 			// verify received parameters
 			if (isGameValid(aGameIdOnServer, gamePassword)) {
 				this.gameIdOnServer = aGameIdOnServer;
@@ -79,6 +79,7 @@ public class Network extends Player {
 
 	@Override
 	public Move getMove() {
+		Speak.say("Network.getMove()", true);
 		Move receivedMove = null;
 		String lastMoveFromServerStr = null;
 
@@ -92,30 +93,35 @@ public class Network extends Player {
 		 * not slowing down the game too much.
 		 */
 		while(receivedMove == null) {
+			Speak.say("Network.getMove: while(receivedMove == null)--loop", true);
 			// ask server if there are new messages
 			lastMoveFromServerStr = "" + getLastMove();
 	    	// instead of returning an empty string we return null
 	    	if (lastMoveFromServerStr != null && lastMoveFromServerStr.trim().length() == 0) 
 	    		lastMoveFromServerStr = null;
+	    	
 			// if no messages returned, return null
-			if (lastMoveFromServerStr == null) {
-				System.out.println("No moves received");
+			if(lastMoveFromServerStr == null ) {
+				Speak.say("Network.getMove: No moves received", true);
 			
 			/** 
 			 * if we receive the move that we have just sent, we do not want
 			 * to return it to the game logic.
 			 */
 			} else if (lastMoveStrSentToNetwork != null
-					&& lastMoveStrSentToNetwork.equals(lastMoveFromServerStr)) {
-				System.out.println("Received move is the one we sent");
-//				receivedMove = parsePacket(lastMoveFromServerStr);
+					&& lastMoveStrSentToNetwork.equals(lastMoveFromServerStr)) {		
+				Speak.say("Network.getMove: Received move is the one we sent: " + lastMoveFromServerStr, true);
+				Speak.say("Network.getMove: We sent: " + lastMoveStrSentToNetwork, true);
 				return null;
 			} else {
-				receivedMove = parsePacket(lastMoveFromServerStr);
+				Speak.say("Network.getMove: Last move received from server: " + lastMoveFromServerStr, true);
+				if(lastMoveFromServerStr != null && !lastMoveFromServerStr.equals("null"))
+					receivedMove = Move.makeMoveFromString(lastMoveFromServerStr);
 			}
-			try {Thread.sleep(3000);} catch (InterruptedException e) {}
+			try {Thread.sleep(1000);} catch (InterruptedException e) {}
 		}
-
+		
+		Speak.say("Network.getMove: Out of while-loop, receivedMove = " + receivedMove, true);
 		// set last received move
 		this.lastMoveStrReceivedFromNetwork = lastMoveFromServerStr;
 		currentMove = null;
@@ -123,7 +129,9 @@ public class Network extends Player {
 	}
 
 	private Move parsePacket(String lastMoveFromServerStr) {
-		Speak.say("inside parsePacket: " + lastMoveFromServerStr, true);
+		Speak.say("Network.parsePacket()", true);
+		if(lastMoveFromServerStr == null)
+			return null;
 		Move move = null;
 		String type = lastMoveFromServerStr.substring(0, 4);
 		String content = lastMoveFromServerStr.substring(4, 
@@ -136,15 +144,22 @@ public class Network extends Player {
 							break;
 			default:		break;
 		}
+		Speak.say("Network.parsePacket: Move returning from parsePacket: " + move, true);
 		return move;
 	}
 	
+	/**	Set currentMove to the move parameter.
+	 * Sends this move to server as last move.
+	 *
+	 * @param currentMove
+	 */
 	@Override
 	public void setCurrentMove(Move currentMove) {
+		Speak.say("Network.setCurrentMove()", true);
 		String moveStr = "" + currentMove;
 		if (!moveStr.equals(lastMoveStrReceivedFromNetwork)) {
 			// send our move to server
-			sendMove(moveStr);
+			sendMove(moveStr, 0);
 			lastMoveStrSentToNetwork = moveStr;
 		} else {
 			// the executed move is the one we have received from
@@ -152,17 +167,45 @@ public class Network extends Player {
 		}
 		this.currentMove = currentMove;
 	}
+	
+	/** Set currentMove for pawn promotion.
+	 * Param promoType (char) represents type of piece player promoted pawn to.
+	 * Sends this to server as combination of move and promotion type.
+	 * 
+	 * @param currentMove
+	 * @param promoType
+	 */
+	public void setCurrentMove(Move currentMove, char promoType) {
+		String moveStr = "" + currentMove + promoType;
+		if (!moveStr.equals(lastMoveStrReceivedFromNetwork)) {
+			// send our move to server
+			sendMove(moveStr, 1);
+			lastMoveStrSentToNetwork = moveStr;
+		} else {
+			// the executed move is the one we have received from
+			// the network, so no need to send it again to the server
+		}
+		this.currentMove = currentMove;
+	}
+	
+	/** Send chat message to remote opponent
+	 * 
+	 * @param message
+	 */
+	public void chat(String message) {
+		if(message != null)
+			sendMove(message, 2);
+	}
 
-	/**
-	 * get the last move that is available on the server
-	 *
+	/** Get the last move that is available on the server
+	 * 
 	 * @param aGameIdOnServer - server game id
 	 * @param aGamePassword - password for online game
 	 * @return the last move as string
 	 */
 	@Override
 	public Move getLastMove() {
-//		System.out.println("get last move from server");
+		Speak.say("Network.getLastMove()", true);
 	    Object[] params = new Object[]{getGameIdOnServer()};
 	    String message = null;
 	    try {
@@ -175,7 +218,7 @@ public class Network extends Player {
 		}	    
 	    
 	    if(message != null) {
-	    	System.out.println("got last move from server:" + message);
+	    	Speak.say("Network.getLastMove: Got last move from server:" + message, true);
 	    	return parsePacket(message);
 	    } else
 	    	return null;
@@ -188,9 +231,21 @@ public class Network extends Player {
 	 * @param message - the move as a string to be sent
 	 * @return id that the server assigned to the new move message
 	 */
-	public String sendMove(String message) {
-		message = "MOVE" + message;
-		System.out.println("sending move:" + message);
+	public String sendMove(String message, int messageType) {
+		Speak.say("Network.sendMove()", true);
+		String type = "Move";
+		switch (messageType) {
+			case 0:		message = "MOVE" + message;
+						break;
+			case 1:		message = "PROM" + message;
+						type = "Promotion";
+						break;
+			case 2: 	message = "MESS" + message;
+						type = "Message";
+						break;
+			default:	return null;
+		}	
+		Speak.tell("Network.sendMove: Sending " + type + ": " + message, true);
 	    Object[] params = new Object[]{getGameIdOnServer(), getGamePassword(), message};
 	    String result = null;
 	    try {
@@ -198,13 +253,14 @@ public class Network extends Player {
 		} catch (XmlRpcException e) {
 			throw new IllegalStateException(e);
 		}
-	    System.out.println("returned result:" + result);
+	    Speak.say("returned result:" + result, true);
 		return result;
 	}
 	
 	public static String getCurrentChannelId() {
+		Speak.say("Network.getCurrentChannelId()", true);
 		XmlRpcClient client;
-		System.out.println("getting current channel id...");
+		Speak.say("Network.getCurrentChannelId: Getting current channel id...", true);
 		Object[] params = new Object[]{};
 		String result = null;
 		try{
@@ -231,7 +287,8 @@ public class Network extends Player {
 	 * @return true if parameters are valid
 	 */
 	private boolean isGameValid(String aGameIdOnServer, String aGamePassword) {
-		System.out.println("sending validation request for game and password");
+		Speak.say("Network.isGameValid()", true);
+		Speak.say("Network.isGameValid: Sending validation request for game and password", true);
 	    Object[] params = new Object[]{aGameIdOnServer, aGamePassword};
 	    String result = null;
 	    try {
@@ -248,15 +305,16 @@ public class Network extends Player {
 	 * @return the game id that the game server assigned to the new game
 	 */
 	private String createGame(String aGamePassword) {
+		Speak.say("Network.createGame()", true);
 	    Object[] params = new Object[]{aGamePassword};
 	    String result;
-	    System.out.println("sending createChannel request");
+	    Speak.say("Network.createGame: Sending createChannel request", true);
 	    try {
 	    	result = (String) xmlRpcClient.execute("createChannel", params);
 		} catch (XmlRpcException e) {
 			throw new IllegalStateException(e);
 		}
-	    System.out.println("executed method createChannel. gameID: " + result);
+	    Speak.say("Network.createGame: Executed method createChannel. gameID: " + result, true);
 		return result;
 	}
 

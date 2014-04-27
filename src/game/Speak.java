@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 
 public class Speak {
 	
+	private static boolean debug;
+	
 	public static int ask(String question, String[] options) {
 		BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
 		while(true) {
@@ -52,10 +54,30 @@ public class Speak {
 	}
 	
 	public static void say(String sentence) {
-		System.out.print(sentence);
+		if(debug) {
+			sentence = " >> " + sentence;
+			System.out.print(sentence);
+		}
 	}
 	
 	public static void say(String sentence, boolean line) {
 		say(sentence += "\n");
+	}
+	
+	public static void tell(String sentence) {
+		sentence = " >> " + sentence;
+		System.out.print(sentence);
+	}
+	
+	public static void tell(String sentence, boolean line) {
+		tell(sentence += "\n");
+	}
+
+	public static boolean isDebug() {
+		return debug;
+	}
+
+	public static void setDebug(boolean debug) {
+		Speak.debug = debug;
 	}		
 }
