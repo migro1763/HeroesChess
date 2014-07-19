@@ -35,13 +35,12 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 	
 	private static final String bgImgPaths[] = {"/img/gameBg_grasshills.png",
 												"/img/gameBg_desert.png",
-												"/img/gameBg_swamp.png",
-												"/img/gameBg_winter.png"
+												"/img/gameBg_swamp.png"
+//												"/img/gameBg_winter.png"
 												};
 	private static final String spriteSheetTxtPath = "heroesFrames_sheet2.txt";
 	private static final String spriteSheetImgPath = "/img/heroesFrames_sheet2.png";
 	
-	private static boolean DEBUG = true;
 	private static boolean SHOW_MOVES = true;
 	private static boolean SHOW_LAST_MOVE = true;
 	private static boolean SHOW_CURRENT_SQUARE = true;
@@ -64,6 +63,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 	private SpriteSheet ss;
 	private Reader reader = new Reader();
 	private ArrayList<Unit> data;
+	private boolean debugSquaresM = false, debugSquaresR = false;
     public double scale = 1.0;
     public int speed = 200; // smaller = faster
     public int whichUnit = 0;
@@ -104,7 +104,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
     	// load background image
     	BufferedImageLoader imgLoader = new BufferedImageLoader();
 //			this.imgBackground = new ImageIcon(ImageIO.read(this.getClass().getResource(bgImgPath))).getImage();
-		this.imgBackground = imgLoader.loadImage(bgImgPaths[new Random().nextInt(4)]);
+		this.imgBackground = imgLoader.loadImage(bgImgPaths[new Random().nextInt(bgImgPaths.length)]);
     	// factor to scale gui pieces to fit board graphics
 		getScaleAdd = ((double)GUI_PIECE_SCALE / 12.0) - 1.0;
 
@@ -125,7 +125,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
         JMenu file = new JMenu("File");
         JMenu options = new JMenu("Options");
         JMenuItem fileMenuExit = new JMenuItem("Exit HeroesChess");
-        JCheckBoxMenuItem  optionsMenuDebug = new JCheckBoxMenuItem ("Debug mode", DEBUG);
+        JCheckBoxMenuItem  optionsMenuDebug = new JCheckBoxMenuItem ("Debug mode", Speak.isDebug());
         JCheckBoxMenuItem  optionsMenuMoves = new JCheckBoxMenuItem ("Show valid moves", SHOW_MOVES);
         JCheckBoxMenuItem  optionsMenuCurrent = new JCheckBoxMenuItem ("Show current square", SHOW_CURRENT_SQUARE);
         JCheckBoxMenuItem  optionsMenuLast = new JCheckBoxMenuItem ("Show last move", SHOW_LAST_MOVE);
@@ -138,7 +138,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
         optionsMenuDebug.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				DEBUG = !DEBUG;			
+				Speak.setDebug(!Speak.isDebug());			
 			}
         });
         optionsMenuMoves.addActionListener(new ActionListener() {
@@ -175,9 +175,10 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 
 		lblGameState.setFont(GAME_FONT);
 		int posX = (bgWidth - (bgWidth-BOARD_WIDTH>>1)) - (labelText.length()<<3);
-		lblGameState.setBounds(posX, 40, 200, 20);
-		lblGameState.setForeground(new Color(255, 255, 255, 128));
-		lblGameState.setOpaque(false);
+		lblGameState.setBounds(posX, 40, BOARD_WIDTH>>1, 20);
+		lblGameState.setForeground(new Color(255, 255, 255, 255));
+		lblGameState.setBackground(new Color(32, 32, 32, 128));
+		lblGameState.setOpaque(true);
 		// add JLabel to JPanel (this)
 		this.add(lblGameState);
 		
@@ -313,10 +314,10 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 	private String getGameStateAsText() {
 		String state = "Unknown";
 		switch (game.getGameState()) {
-			case COLOR_WHITE: state = "White player: " + game.getPlayer(COLOR_WHITE); break;
-			case COLOR_BLACK: state = "Black player: " + game.getPlayer(COLOR_BLACK); break;
-			case WHITE_WON: state = "White player " + game.getPlayer(COLOR_WHITE) + " has won!"; break;
-			case BLACK_WON: state = "Black player " + game.getPlayer(COLOR_BLACK) + " has won!"; break;
+			case COLOR_WHITE: state = "White: " + game.getPlayer(COLOR_WHITE); break;
+			case COLOR_BLACK: state = "Black: " + game.getPlayer(COLOR_BLACK); break;
+			case WHITE_WON: state = "White " + game.getPlayer(COLOR_WHITE) + " has won!"; break;
+			case BLACK_WON: state = "Black " + game.getPlayer(COLOR_BLACK) + " has won!"; break;
 			default:
 		}
 		if(game.getActivePlayer() != null && game.getActivePlayer().isCheck() && 
@@ -388,6 +389,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 						anim.unit.getModFrmDim(SQUARE_HEIGHT, getScaleAdd).h, null);
 			}
 		}
+		
 		// draw dead pieces on each side of board, white on the left
 		int w = -1, b = -1;
 		for (PieceGui guiPiece : capturedGuiPieces) {
@@ -435,7 +437,7 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 				}
 			}
 		}
-
+		
 		// draw valid target locations, if user is dragging a game piece
 		if(isUserDraggingPiece()) {
 			// does dragPiece have any moveBits set?
@@ -449,18 +451,29 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 				int row = convertYToRow(dragPiece.getY());
 				drawRect(g, getPosFromCoords(column, row), COLOUR_CYAN);
 			}
-		}	
+		}
+		
+		// if middle mouse button is pressed
+		if(debugSquaresM) {
+			int[] movePositions = BitBoard.getMultiPos(BitBoard.convertMoveToBits(game.getCurrentMove()));
+			drawGreenRects(g, movePositions);
+		}
+		
+		// if right mouse button is pressed
+		if(debugSquaresR) {
+			int[] movePositions = BitBoard.getMultiPos(game.getBitBoard().getColourPieces(game.getPlayerTurn()));
+			drawGreenRects(g, movePositions);
+		}
 		// draw square rectangles section end -------------------------------------------------------------
 		
 		// draw game state label
 		lblGameState.setText(getGameStateAsText());
-		if(DEBUG)	
+		if(Speak.isDebug())	
 			debugLabel.setVisible(true);
 		else
 			debugLabel.setVisible(false);
 		debugLabel.setText(getDebugText());
-		historyLabel.setText(getHistoryText());
-		
+		historyLabel.setText(getHistoryText());		
 		repaint();
 	}
 	
@@ -535,5 +548,13 @@ public class ChessBoardGui extends JPanel implements GuiParams, Vals {
 		deathPiece.getAnim(STATE_DEATH).setSpeed(200);
 		deathPiece.getAnim(STATE_DEATH).setFinishedDeath(false);
 		deathPiece.getAnim(STATE_DEATH).play();
+	}
+	
+	public void setDebugSquaresM(boolean debugSquaresMState) {
+		debugSquaresM = debugSquaresMState;		
+	}
+
+	public void setDebugSquaresR(boolean debugSquaresRState) {
+		debugSquaresR = debugSquaresRState;		
 	}
 }

@@ -1,9 +1,12 @@
 package players;
 
+import game.Game;
 import game.Move;
 import game.Speak;
+
 import java.net.MalformedURLException;
 import java.net.URL;
+
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
@@ -11,7 +14,7 @@ import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 
 public class Network extends Player {
 
-       /** equivalent to channelId. */
+    /** equivalent to channelId. */
 	private String gameIdOnServer;
 	/** password for the channel on the server. */
 	private String gamePassword = null;
@@ -52,7 +55,6 @@ public class Network extends Player {
 	
 	public void createOrJoinGame(String aGameIdOnServer) {
 		// do we need to create a new game or join existing?
-		//
 		if (aGameIdOnServer == null) {
 			// create new game
 			Speak.tell("Network.createOrJoinGame: HOST >>> Creating new game", true);
@@ -77,51 +79,49 @@ public class Network extends Player {
 		this.dragPiecesEnabled = false;
 	}
 
+	/** Loop until we receive a new move.
+	 *
+	 * We could also just return null when we receive no move
+	 * or receive the one we sent, but as the game logic
+	 * would ask again in 100 ms, I decided to block
+	 * the call and implement a waiting time of 3000 ms.
+	 * This greatly reduces network traffic, while still
+	 * not slowing down the game too much.
+	 */
 	@Override
 	public Move getMove() {
-		Speak.say("Network.getMove()", true);
 		Move receivedMove = null;
 		String lastMoveFromServerStr = null;
 
-		/** loop until we receive a new move.
-		 *
-		 * We could also just return null when we receive no move
-		 * or receive the one we sent, but as the game logic
-		 * would ask again in 100 ms, I decided to block
-		 * the call and implement a waiting time of 3000 ms.
-		 * This greatly reduces network traffic, while still
-		 * not slowing down the game too much.
-		 */
 		while(receivedMove == null) {
-			Speak.say("Network.getMove: while(receivedMove == null)--loop", true);
+			// wait 3 seconds before asking server for new message = less network traffic
+			Game.threadPause(3000);
 			// ask server if there are new messages
 			lastMoveFromServerStr = "" + getLastMove();
 	    	// instead of returning an empty string we return null
-	    	if (lastMoveFromServerStr != null && lastMoveFromServerStr.trim().length() == 0) 
+	    	if (lastMoveFromServerStr != null && (lastMoveFromServerStr.trim().length() == 0 || lastMoveFromServerStr.equals("null")))
 	    		lastMoveFromServerStr = null;
 	    	
 			// if no messages returned, return null
 			if(lastMoveFromServerStr == null ) {
-				Speak.say("Network.getMove: No moves received", true);
+				Speak.tell("Network.getMove: No moves received", true);
+				return null;
 			
 			/** 
 			 * if we receive the move that we have just sent, we do not want
 			 * to return it to the game logic.
 			 */
 			} else if (lastMoveStrSentToNetwork != null
-					&& lastMoveStrSentToNetwork.equals(lastMoveFromServerStr)) {		
+					&& lastMoveStrSentToNetwork.equals(lastMoveFromServerStr)) {	
 				Speak.say("Network.getMove: Received move is the one we sent: " + lastMoveFromServerStr, true);
-				Speak.say("Network.getMove: We sent: " + lastMoveStrSentToNetwork, true);
-				return null;
+				break;
 			} else {
-				Speak.say("Network.getMove: Last move received from server: " + lastMoveFromServerStr, true);
-				if(lastMoveFromServerStr != null && !lastMoveFromServerStr.equals("null"))
+				Speak.tell("Network.getMove: Last move received from server: " + lastMoveFromServerStr, true);
+				if(lastMoveFromServerStr != null)
 					receivedMove = Move.makeMoveFromString(lastMoveFromServerStr);
 			}
-			try {Thread.sleep(1000);} catch (InterruptedException e) {}
 		}
 		
-		Speak.say("Network.getMove: Out of while-loop, receivedMove = " + receivedMove, true);
 		// set last received move
 		this.lastMoveStrReceivedFromNetwork = lastMoveFromServerStr;
 		currentMove = null;
@@ -129,17 +129,18 @@ public class Network extends Player {
 	}
 
 	private Move parsePacket(String lastMoveFromServerStr) {
-		Speak.say("Network.parsePacket()", true);
 		if(lastMoveFromServerStr == null)
 			return null;
+		int serverStrLen = lastMoveFromServerStr.length();
 		Move move = null;
 		String type = lastMoveFromServerStr.substring(0, 4);
-		String content = lastMoveFromServerStr.substring(4, 
-								lastMoveFromServerStr.length());
+		String content = lastMoveFromServerStr.substring(4, serverStrLen);
 		switch (type) {
 			case "MOVE":	move = Move.makeMoveFromString(content);
 							break;
-			case "PROM":	break; // pawn promotion choice
+			case "PROM":	move = Move.makeMoveFromString(content);
+							setPromotedTo(Integer.parseInt(content.substring(4, 5)));
+							break;
 			case "MESS":	Speak.say("Chat message: " + content, true);
 							break;
 			default:		break;
@@ -155,28 +156,29 @@ public class Network extends Player {
 	 */
 	@Override
 	public void setCurrentMove(Move currentMove) {
-		Speak.say("Network.setCurrentMove()", true);
 		String moveStr = "" + currentMove;
+		Speak.tell("Network.setCurrentMove: moveStr: " + moveStr, true);
+		Speak.tell("Network.setCurrentMove: lastMoveStrReceivedFromNetwork: " + lastMoveStrReceivedFromNetwork, true);
 		if (!moveStr.equals(lastMoveStrReceivedFromNetwork)) {
 			// send our move to server
 			sendMove(moveStr, 0);
 			lastMoveStrSentToNetwork = moveStr;
 		} else {
-			// the executed move is the one we have received from
-			// the network, so no need to send it again to the server
+			Speak.tell("!!! ------> aaaaah! move equals last move received from server!", true);
 		}
 		this.currentMove = currentMove;
 	}
 	
 	/** Set currentMove for pawn promotion.
-	 * Param promoType (char) represents type of piece player promoted pawn to.
+	 * Param promoType int) represents type of piece player promoted pawn to.
 	 * Sends this to server as combination of move and promotion type.
 	 * 
 	 * @param currentMove
 	 * @param promoType
 	 */
-	public void setCurrentMove(Move currentMove, char promoType) {
-		String moveStr = "" + currentMove + promoType;
+	public void setCurrentMove(Move currentMove, int promoType) {
+		Speak.tell("Network.setCurrentMove: pawn promotion, type = " + promoType, true);
+		String moveStr = "" + currentMove + "" + promoType;
 		if (!moveStr.equals(lastMoveStrReceivedFromNetwork)) {
 			// send our move to server
 			sendMove(moveStr, 1);
@@ -205,7 +207,6 @@ public class Network extends Player {
 	 */
 	@Override
 	public Move getLastMove() {
-		Speak.say("Network.getLastMove()", true);
 	    Object[] params = new Object[]{getGameIdOnServer()};
 	    String message = null;
 	    try {
@@ -216,9 +217,8 @@ public class Network extends Player {
 		} catch (XmlRpcException e) {
 			throw new IllegalStateException(e);
 		}	    
-	    
 	    if(message != null) {
-	    	Speak.say("Network.getLastMove: Got last move from server:" + message, true);
+	    	Speak.tell("Network.getLastMove: Got last move from server: " + message, true);
 	    	return parsePacket(message);
 	    } else
 	    	return null;
@@ -328,13 +328,12 @@ public class Network extends Player {
 	
 	@Override
 	public String toString() {
-		return "Network: " + name;
+		return "NET: " + name;
 	}
 
 	@Override
 	public void moveSuccessfullyExecuted(Move move) {
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub		
 	}
 }
 

@@ -2,9 +2,9 @@ package gui;
 
 import javax.swing.JFrame;
 
+@SuppressWarnings("serial")
 public class HeroesFrame extends JFrame {
-	
-	private static final long serialVersionUID = 1L;
+		
 	private int w = 0, h = 0;
 
 	public HeroesFrame(int width, int height) {

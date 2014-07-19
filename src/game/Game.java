@@ -18,6 +18,8 @@ public class Game implements Runnable, Vals {
 	private int enPassantPos = -1;
 	private int gameState = playerTurn;
 	private int turn = 1;
+	private int promotion = -1;
+	private boolean isPieceDragged = false;
 	
 	public Game() {
 		btb = new BitBoard(this);
@@ -50,10 +52,11 @@ public class Game implements Runnable, Vals {
 		playerTurn = COLOR_WHITE;
 		setGameState(playerTurn);
 		activePlayer = whitePlayer;
-		Speak.say("Active player: " + activePlayer, true);
+		Speak.say("Player: " + activePlayer, true);
 		Speak.tell("ChessGame: starting game flow", true);
 		AlgebraicNotation algNot = new AlgebraicNotation(btb);
 		board = new ChessBoardGui(this);
+		
 		// start game flow loop
 		boolean didMove = false;
 		while(!isGameOver()) {
@@ -62,7 +65,7 @@ public class Game implements Runnable, Vals {
 			changePlayerTurnAfterMove(didMove);
 		}
 		
-		/** Game win
+		/* Game win
 		 * play animation of losing player's king dying
 		 */
 		setGameState(playerTurn == COLOR_WHITE ? BLACK_WON : WHITE_WON);
@@ -70,7 +73,6 @@ public class Game implements Runnable, Vals {
 	}
 
 	public boolean gameLoop(AlgebraicNotation algNot) {
-		Speak.say("Game.gameLoop()", true);
 		Move selectedMove = null;
 		boolean hasMoved = false, isHuman = false;
 		PieceGui dragPiece = null;
@@ -104,7 +106,7 @@ public class Game implements Runnable, Vals {
 			// test if active player is not human player or
 			// test if the square dragPiece has been dropped into is part of valid moves
 			if(!isHuman || 
-				dragPiece != null && (dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L) {
+				(dragPiece != null && (dragPiece.getMoveBits().getBits() & moveTargetBits) != 0L)) {
 				// make a clone of the current game BitBoard
 				BitBoard preGameBB = new BitBoard(btb);
 		    	if(isHuman) {
@@ -113,11 +115,7 @@ public class Game implements Runnable, Vals {
 					selectedMove = activePlayer.getMove();
 		    	}
 		    	
-				if(selectedMove != null) {	
-//					if(!isHuman)
-//						// get the moved piece as gui piece
-//						dragPiece = board.getGuiPiece(selectedMove.getTrg());
-					
+				if(!isPieceDragged && selectedMove != null) {
 					Speak.tell(activePlayer + "'s dragPiece: " + dragPiece, true);
 					
 			    	// move the selected piece by selected move
@@ -125,8 +123,10 @@ public class Game implements Runnable, Vals {
 		    		// snap the moved piece to its nearest square
 			    	if(dragPiece != null)
 			    		dragPiece.snapToNearestSquare(selectedMove.getTrg());
-			    	// finish move setup for active player
+			    	// finish move setup for active player (nothing happens here for network player)
 			    	activePlayer.moveSuccessfullyExecuted(selectedMove);
+					// get promotion from active player as game's current pawn promotion
+					promotion = activePlayer.getPromotedTo();
 					// do pawn promotion and finish castling setup (move rook etc.)
 					moveGen.pawnPromotion(selectedMove);
 					// derive algebraic chess notation of move
@@ -151,17 +151,18 @@ public class Game implements Runnable, Vals {
 	}
 
 	public void movePiece(Move move) {
-		Speak.say("Game.movePiece()", true);
-		Speak.tell("Game:movePiece, move in: " + move, true);
-		char type = btb.getArraySquare(move.getSrc());
-        char oppType = btb.getArraySquare(move.getTrg());
-        int posOfMovedPiece = move.getTrg();
-        int attackedPiecePos = posOfMovedPiece;
-        
-//        BitBoard.drawArray(btb.getColourPieces(playerTurn), "bits of current player, before");
-//        BitBoard.drawArray(btb.getColourPieces(1-playerTurn), "bits of opponent player");
-        
         if(move != null) {
+    		Speak.say("Game.movePiece()", true);
+    		Speak.tell("Game:movePiece, move in: " + move, true);
+    		char type = btb.getArraySquare(move.getSrc());
+            char oppType = btb.getArraySquare(move.getTrg());
+            int posOfMovedPiece = move.getTrg();
+            int attackedPiecePos = posOfMovedPiece;
+            
+//        	BitBoard.drawArray(btb.getColourPieces(playerTurn), "Source pieces bits");
+//        	BitBoard.drawArray(1L<<move.getSrc() | 1L<<move.getTrg(), "Move bits");
+//        	BitBoard.drawArray(btb.getColourPieces(playerTurn-1), "Target pieces bits");
+        	
 	        // en passant attack
 	        // if enPassantPos is not -1, that means an en passant attack has been made
 	        if(enPassantPos >= 0 && Math.abs(move.getSrc() - enPassantPos) == 1) {
@@ -172,6 +173,7 @@ public class Game implements Runnable, Vals {
 	        
 	        // if target square is not empty = attack!
 	        if(oppType != ' ') {
+	        	Speak.tell("Game.movePiece: attack!", true);
 	        	// set position bit of oppType's bitboard to 0
 	        	btb.setBB(oppType, attackedPiecePos, 0);
 	        	// add captured piece to list of captured pieces
@@ -182,8 +184,6 @@ public class Game implements Runnable, Vals {
 	            threadPause(100);
 	        }
 	        btb.movePieceBits(move);
-			
-	//		BitBoard.drawArray(btb.getColourPieces(playerTurn), "bits of current player, after");
 			
 			// store pawn double push to history for en passant next turn
 			if(Character.toUpperCase(type) == 'P' && 
@@ -217,12 +217,15 @@ public class Game implements Runnable, Vals {
 	}
 
 	private void changePlayerTurnAfterMove(boolean didMove) {
-		Speak.say("Game.changePlayerTurnAfterMove()", true);
 		if(didMove) {
 			setPlayerTurn(1-playerTurn);
 			// if new turn's player is a network player, send currentMove to server:
-			if(activePlayer instanceof Network)
-				activePlayer.setCurrentMove(currentMove);
+			if(activePlayer instanceof Network) {
+				if(promotion > -1)
+					activePlayer.setCurrentMove(currentMove, promotion);
+				else
+					activePlayer.setCurrentMove(currentMove);
+			}				
 			
 			Speak.tell("Game.changePlayerTurnAfterMove: Active player changed to: " + activePlayer, true);
 			// test for check
@@ -357,5 +360,21 @@ public class Game implements Runnable, Vals {
 	@Override
 	public void run() {
 		this.startGame();		
+	}
+
+	public void setPieceDragged(boolean isPieceDragged) {
+		this.isPieceDragged = isPieceDragged;		
+	}
+	
+	public boolean getPieceDragged() {
+		return this.isPieceDragged;		
+	}
+
+	public int getPromotion() {
+		return promotion;
+	}
+
+	public void setPromotion(int promotion) {
+		this.promotion = promotion;
 	}
 }

@@ -70,14 +70,6 @@ public class Move implements Vals {
 	public void setColour(int colour) {
 		this.colour = colour;
 	}
-
-//	public String makeStdMove() {
-//		return makeStdMove(src, trg);
-//	}
-	
-//	public static String makeStdMove(int src, int trg) {
-//		return ("" + FILE_NAME[src>>3] + (8-src&7) + "->" + FILE_NAME[trg>>3] + (8-trg&7));
-//	}
 	
 	@Override
 	public String toString() {

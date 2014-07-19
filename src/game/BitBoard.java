@@ -16,13 +16,13 @@ public class BitBoard {
 //        {'P',' ','P','P','P','P','P','P'}, // '48','49','50','51','52','53','54','55'
 //        {'R',' ',' ',' ','K',' ',' ','R'}  // '56','57','58','59','60','61','62','63'
         
-        {'r','n','b','q','k','b','n','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
+        {'r','n','b','q','k','b',' ','r'}, // ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7'
         {'p','p','p','p','p','p','P','p'}, // ' 8',' 9','10','11','12','13','14','15'
         {' ',' ',' ',' ',' ',' ',' ',' '}, // '16','17','18','19','20','21','22','23'
-        {' ',' ',' ',' ',' ',' ',' ',' '}, // '24','25','26','27','28','29','30','31'
+        {' ',' ',' ','n',' ',' ',' ',' '}, // '24','25','26','27','28','29','30','31'
         {' ',' ',' ',' ',' ',' ',' ',' '}, // '32','33','34','35','36','37','38','39'
         {' ',' ',' ',' ',' ',' ',' ',' '}, // '40','41','42','43','44','45','46','47'
-        {'P','P','P','P','P',' ','P','P'}, // '48','49','50','51','52','53','54','55'
+        {'P','P','P','P','P','P',' ','P'}, // '48','49','50','51','52','53','54','55'
         {'R','N','B','Q','K','B','N','R'}  // '56','57','58','59','60','61','62','63'
 	};
 	
@@ -154,6 +154,13 @@ public class BitBoard {
 		if(bitboard == null) return;
         bitboard.mulBits((bitboard.getBits() & ~(1L << move.getSrc()))); // set source to false (0)
     	bitboard.addBits((bitboard.getBits() | (1L << move.getTrg()))); // set target to true (1)
+	}
+	
+	public static long convertMoveToBits(Move move) {
+		BB bitboard = new BB();
+    	bitboard.addBits((bitboard.getBits() | (1L << move.getSrc()))); // set source to true (1)
+    	bitboard.addBits((bitboard.getBits() | (1L << move.getTrg()))); // set target to true (1)
+    	return bitboard.getBits();
 	}
 	
 	public int getKingPos(int colour) {

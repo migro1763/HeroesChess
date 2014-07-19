@@ -5,7 +5,7 @@ package game;
  * A chess game with a graphical interface 
  * ripped from Heroes of Might and Magic II & III
  * 
- * v0.51
+ * v0.62
  * 
  * @author Mikkel Syse Groesland 2014
  * 
@@ -113,7 +113,11 @@ public class HeroesChess implements Vals {
 		Speak.say("exit while-loop, gameIdOnServer: " + gameIdOnServer, true);
 		
 		// send interrupt signal to title screen thread, disposing all its frames
-		titleThread.interrupt();
+		while(!titleThread.isInterrupted()) {
+			titleThread.interrupt();
+//			Game.threadPause(10);
+		}
+		Game.threadPause(50);
 		
 		// DEBUG
 		Speak.say("playerColour: " + playerColour + ", whereas COLOR_WHITE = " + COLOR_WHITE, true);
@@ -139,7 +143,11 @@ public class HeroesChess implements Vals {
 		game.setPlayer(COLOR_WHITE, playerWhite);
 		game.setPlayer(COLOR_BLACK, playerBlack);
 
-		// in the end we start the game
+		// in the end we start the game, after testing whether titlescreen thread is still alive
+		while(titleThread.isAlive()) {
+			titleThread.interrupt();
+			Game.threadPause(100);
+		}			
 		new Thread(game).start();
 	}
 	

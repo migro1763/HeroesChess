@@ -3,8 +3,11 @@ package game;
 import gui.OptionsDiag;
 import interfaces.GuiParams;
 import interfaces.Vals;
+
 import java.util.ArrayList;
 import java.util.List;
+
+import players.Human;
 
 public class MoveGenerator implements Vals, GuiParams {
 	private static final long FILE_AB = 217020518514230019L; // 1's on all of column A + B (left side)
@@ -396,19 +399,28 @@ public class MoveGenerator implements Vals, GuiParams {
 			promotePawn(posOfMovedPiece, game.getPlayerTurn());
 	}
 
-	public void promotePawn(int posOfMovedPiece, int colour) {	
+	public void promotePawn(int posOfMovedPiece, int colour) {
+		// skriv ut colour
 		BB pawnBB = gameBB.getBB((colour == COLOR_WHITE) ? 'P' : 'p'); // pawn to promote
 		char queen = (colour == COLOR_WHITE) ? 'Q' : 'q'; // promotion choice 0
 		char knight = (colour == COLOR_WHITE) ? 'N' : 'n'; // promotion choice 1
 		char rook = (colour == COLOR_WHITE) ? 'R' : 'r'; // promotion choice 2
 		char bishop = (colour == COLOR_WHITE) ? 'B' : 'b'; // promotion choice 3
-		String[] choices = {Game.getLongName(queen, colour), Game.getLongName(knight, colour), 
-				Game.getLongName(rook, colour), Game.getLongName(bishop, colour)};
+		int choice = 0;
 		
-		final OptionsDiag optionsDiag = new OptionsDiag(
-				"What do you wish the pawn to be promoted to?\n", choices, 1, BOARD_WIDTH/2, BOARD_HEIGHT/2);
+		if(game.getActivePlayer() instanceof Human) { // if current player is human
+			String[] choices = {Game.getLongName(queen, colour), Game.getLongName(knight, colour), 
+					Game.getLongName(rook, colour), Game.getLongName(bishop, colour)};
+			
+			final OptionsDiag optionsDiag = new OptionsDiag(
+					"What do you wish the pawn to be promoted to?\n", choices, 1, BOARD_WIDTH/2, BOARD_HEIGHT/2);
+			choice = optionsDiag.getChoice();
+			game.setPromotion(choice);
+		} else { // if current player is network or computer
+			if(game.getPromotion() > -1)
+				choice = game.getPromotion();
+		}
 		
-		int choice = optionsDiag.getChoice();
 		pawnBB.mulBits(~(1L<<posOfMovedPiece)); // set pawn bit to 0 at pos
 		switch(choice) {
 			case 0: // if choosing queen

@@ -14,6 +14,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import players.Player;
 
@@ -48,33 +49,43 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 		Player activePlayer = board.getGame().getActivePlayer();
 		int playerTurn = board.getGame().getPlayerTurn();
 		
-		if(!activePlayer.isDragPiecesEnabled())
-			return;
-		
-		int x = mouseDownCompCoords.x;
-		int y = mouseDownCompCoords.y;
-		
-		int mouseOverPos = getMouseOverPos(x, y);
-		if(mouseOverPos >= 0) {
-			PieceGui guiPieceInFocus = board.getGuiPiece(mouseOverPos);
-			if(guiPieceInFocus != null) {
-				if(guiPieceInFocus.getColour() == playerTurn) {
-					// calculate offset, because we do not want the drag piece
-					// to jump with it's upper left corner to the current mouse position
-					dragOffsetX = x - guiPieceInFocus.getX();
-					dragOffsetY = y - guiPieceInFocus.getY();
-					guiPieceInFocus.setState(STATE_WALK);
-					guiPieceInFocus.getAnim(STATE_WALK).setIdlePause(0);
-					guiPieceInFocus.getAnim(STATE_WALK).setSpeed(150);
-					guiPieceInFocus.getAnim(STATE_WALK).play();
-					
-					BB dragPieceMoveBits = board.getGame().getMoveGen().possibleMoves(
-							playerTurn, guiPieceInFocus.getPos(), board.getGame().getPawnHistory());
-
-					guiPieceInFocus.setMoveBits(dragPieceMoveBits);
-					board.setDragPiece(guiPieceInFocus);
-				}
-			} 
+		// if pressing middle mouse button
+		if(SwingUtilities.isMiddleMouseButton(evt)) {
+			board.setDebugSquaresM(true);
+		// if pressing right mouse button
+		} else if(SwingUtilities.isRightMouseButton(evt)) {
+			board.setDebugSquaresR(true);
+		// if pressing left mouse button
+		} else {
+			if(!activePlayer.isDragPiecesEnabled())
+				return;
+			
+			int x = mouseDownCompCoords.x;
+			int y = mouseDownCompCoords.y;
+			
+			int mouseOverPos = getMouseOverPos(x, y);
+			if(mouseOverPos >= 0) {
+				PieceGui guiPieceInFocus = board.getGuiPiece(mouseOverPos);
+				if(guiPieceInFocus != null) {
+					if(guiPieceInFocus.getColour() == playerTurn) {
+						board.getGame().setPieceDragged(true);
+						// calculate offset, because we do not want the drag piece
+						// to jump with it's upper left corner to the current mouse position
+						dragOffsetX = x - guiPieceInFocus.getX();
+						dragOffsetY = y - guiPieceInFocus.getY();
+						guiPieceInFocus.setState(STATE_WALK);
+						guiPieceInFocus.getAnim(STATE_WALK).setIdlePause(0);
+						guiPieceInFocus.getAnim(STATE_WALK).setSpeed(150);
+						guiPieceInFocus.getAnim(STATE_WALK).play();
+						
+						BB dragPieceMoveBits = board.getGame().getMoveGen().possibleMoves(
+								playerTurn, guiPieceInFocus.getPos(), board.getGame().getPawnHistory());
+	
+						guiPieceInFocus.setMoveBits(dragPieceMoveBits);
+						board.setDragPiece(guiPieceInFocus);
+					}
+				} 
+			}
 		}
 	}
 
@@ -97,7 +108,10 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 	
 	@Override
 	public void mouseReleased(MouseEvent evt) {
+		board.setDebugSquaresM(false);
+		board.setDebugSquaresR(false);
 		mouseDownCompCoords = null;
+		board.getGame().setPieceDragged(false);
 		if(board.getDragPiece() != null){
 			// set game piece to the new location if possible
 			PieceGui dragPiece = board.getDragPiece();
@@ -114,8 +128,8 @@ public class PiecesDragAndDropListener implements MouseListener, MouseMotionList
 						dragPiece.snapToNearestSquare();
 					}
 				}
-				// thread pause 0.1 seconds
-				Game.threadPause(120);
+				// thread pause 0.08 seconds
+				Game.threadPause(80);
 		    	dragPiece.setState(STATE_IDLE);
 		    	dragPiece.getAnim(STATE_IDLE).resetIdlePause();
 		    	dragPiece.getAnim(STATE_IDLE).play();

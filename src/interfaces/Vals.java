@@ -25,7 +25,7 @@ public interface Vals {
 	public static final Color COLOUR_GREEN = new Color(0, 255, 0, 160);
 	public static final Color COLOUR_WHITE_50 = new Color(255, 255, 255, 128);
 	
-	public static final Font GAME_FONT = new Font("Arial", Font.PLAIN, 14);
+	public static final Font GAME_FONT = new Font("Arial", Font.TRUETYPE_FONT, 16);
 	
 	public static final int ROW_1 = 0, ROW_2 = 1, ROW_3 = 2, ROW_4 = 3, 
 							ROW_5 = 4, ROW_6 = 5, ROW_7 = 6, ROW_8 = 7;

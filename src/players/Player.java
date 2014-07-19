@@ -9,8 +9,7 @@ public abstract class Player {
 	protected boolean dragPiecesEnabled;
 	protected boolean kSideCastling = true, qSideCastling = true;
 	protected Move lastMove, currentMove;
-	protected int promoteTo = 0; // for pawn promotion, 0=no promotion
-	// 1=queen, 2=knight, 3=rook, 4=bishop
+	private int promotedTo = -1;
 	
 	public Player(String name) {
 		this.name = name;
@@ -67,6 +66,11 @@ public abstract class Player {
 	public void setCurrentMove(Move currentMove) {
 		this.currentMove = currentMove;
 	}
+	
+	// for pawn promotions
+	public void setCurrentMove(Move currentMove, int promoType) {
+		this.currentMove = currentMove;
+	}
 
 	public boolean iskSideCastling() {
 		return kSideCastling;
@@ -84,11 +88,13 @@ public abstract class Player {
 		this.qSideCastling = qSideCastling;
 	}
 
-	public int getPromoteTo() {
-		return promoteTo;
+	public int getPromotedTo() {
+		int promotionToSend = promotedTo;
+		promotedTo = -1;
+		return promotionToSend;
 	}
 
-	public void setPromoteTo(int promoteTo) {
-		this.promoteTo = promoteTo;
+	public void setPromotedTo(int promotedTo) {
+		this.promotedTo = promotedTo;
 	}
 }

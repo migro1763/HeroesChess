@@ -17,10 +17,9 @@ import listeners.WindowMoverListener;
 import interfaces.GuiParams;
 import interfaces.Vals;
 
+@SuppressWarnings("serial")
 public class TitleScreen extends JPanel implements Runnable, MouseListener, GuiParams, Vals {
-	
-	private static final long serialVersionUID = 1L;
-	
+
 	public static final int[][] BUTTON_COORDS = {	{490, 200, 64, 64}, // new game
 													{200, 190, 71, 58}, // load game
 													{415, 110, 72, 59}, // high scores
@@ -51,7 +50,6 @@ public class TitleScreen extends JPanel implements Runnable, MouseListener, GuiP
 	private List<BufferedImage> menuButtonImages = new ArrayList<BufferedImage>();
 	private List<BufferedImage> menuImages = new ArrayList<BufferedImage>();
 	private static Point mouseDownCompCoords;
-//	private HeroesFrame frame;
 	private HeroesDialog dialog;
 	private WindowMoverListener winMoverListener, menuMoverListener;
 	private int choice = -1, choiceOut = choice;
@@ -164,20 +162,16 @@ public class TitleScreen extends JPanel implements Runnable, MouseListener, GuiP
 		dialog.addImage(menuButtonImages.get(0)); // add player select buttons
 		dialog.display();
 		playerSelect = dialog.getChoice();
-		System.out.println("playerSelect: " + playerSelect);
 		if(playerSelect < 3) {
 			dialog.flushImages(); // remove previously added buttons
 			dialog.addImage(menuButtonImages.get(1)); // add colour select buttons
 			dialog.display();
 			colourSelect = dialog.getChoice();
-			System.out.println("colourSelect: " + colourSelect);
 			if(playerSelect == 2 && colourSelect < 3) { // if two players
 				dialog.flushImages();
 				dialog.addImage(menuButtonImages.get(2)); // add network select buttons
 				dialog.display();
 				networkSelect = dialog.getChoice();
-				System.out.println("networkSelect: " + networkSelect);
-				
 				// open new dialog gui for entering password
 				while (text.isEmpty()) {
 					dialog = new HeroesDialog(menuImages.get(1));
